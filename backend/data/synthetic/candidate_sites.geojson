@@ -1,0 +1,100 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.03,
+          25.03
+        ]
+      },
+      "properties": {
+        "id": "S001",
+        "name": "Site A",
+        "elevation": 150.0,
+        "slope": 2.0,
+        "aspect": 90.0,
+        "infrastructure_score": 45.0,
+        "dataset_type": "DEMO / SYNTHETIC DATA"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.08,
+          25.08
+        ]
+      },
+      "properties": {
+        "id": "S002",
+        "name": "Site B",
+        "elevation": 160.0,
+        "slope": 1.5,
+        "aspect": 120.0,
+        "infrastructure_score": 85.0,
+        "dataset_type": "DEMO / SYNTHETIC DATA"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          81.84998289516415,
+          24.82576007503618
+        ]
+      },
+      "properties": {
+        "id": "S003",
+        "name": "Site C",
+        "elevation": 129.1,
+        "slope": 8.6,
+        "aspect": 248.3,
+        "infrastructure_score": 79.3,
+        "dataset_type": "DEMO / SYNTHETIC DATA"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.06438289233161,
+          25.024414431731188
+        ]
+      },
+      "properties": {
+        "id": "S004",
+        "name": "Site D",
+        "elevation": 293.1,
+        "slope": 9.6,
+        "aspect": 349.0,
+        "infrastructure_score": 60.0,
+        "dataset_type": "DEMO / SYNTHETIC DATA"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          82.11034553482462,
+          25.114346568431632
+        ]
+      },
+      "properties": {
+        "id": "S005",
+        "name": "Site E",
+        "elevation": 292.1,
+        "slope": 12.0,
+        "aspect": 139.3,
+        "infrastructure_score": 88.9,
+        "dataset_type": "DEMO / SYNTHETIC DATA"
+      }
+    }
+  ]
+}
