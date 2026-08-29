@@ -163,6 +163,20 @@ export default function EnginesTestingPage() {
           </button>
         </div>
 
+        <div className="flex justify-between items-center border-b pb-4 mb-4">
+          <div>
+            <h2 className="text-xl font-bold text-purple-700">Master Risk Engine (RPI)</h2>
+            <p className="text-sm text-gray-500 mt-1">Aggregates Hazard, Exposure, and Vulnerability using dynamic weights to output the final Relocation Priority Index.</p>
+          </div>
+          <button 
+            onClick={testMasterEngine}
+            disabled={loading}
+            className="bg-purple-700 text-white px-4 py-2 rounded font-medium hover:bg-purple-800 disabled:opacity-50"
+          >
+            {loading ? "Running..." : "Run Full Pipeline"}
+          </button>
+        </div>
+
         {error && <div className="text-red-600 p-3 bg-red-50 rounded mb-4">{error}</div>}
 
         {result && (
@@ -170,19 +184,29 @@ export default function EnginesTestingPage() {
             <h3 className="font-semibold mb-2">Results (Showing Top 3):</h3>
             <div className="space-y-3">
               {result.results.slice(0, 3).map((hab: any, idx: number) => {
-                const score = hab.hazard_score ?? hab.exposure_score ?? hab.vulnerability_score ?? 0;
-                const explanation = hab.explanation ?? hab.exposure_explanation ?? hab.vulnerability_explanation ?? {};
+                const score = hab.rpi ?? hab.hazard_score ?? hab.exposure_score ?? hab.vulnerability_score ?? 0;
+                const explanation = hab.rpi_explanation ?? hab.explanation ?? hab.exposure_explanation ?? hab.vulnerability_explanation ?? {};
                 return (
-                <div key={idx} className="bg-gray-50 p-3 rounded border text-sm">
+                <div key={idx} className={`p-3 rounded border text-sm ${hab.rpi ? (hab.rpi > 75 ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200') : 'bg-gray-50'}`}>
                   <div className="flex justify-between font-bold mb-1">
-                    <span>{hab.name}</span>
-                    <span className={score > 0 ? "text-red-600" : "text-green-600"}>
-                      Score: {score}
+                    <span className="flex items-center gap-2">
+                      {hab.name}
+                      {hab.risk_category && <span className="text-[10px] px-2 py-0.5 rounded-full bg-black text-white">{hab.risk_category}</span>}
+                    </span>
+                    <span className={score > 50 ? "text-red-600 font-bold" : "text-green-600 font-bold"}>
+                      Score: {typeof score === 'number' ? score.toFixed(1) : score}
                     </span>
                   </div>
-                  <div className="text-gray-600 font-mono text-xs mt-2 p-2 bg-gray-100 rounded">
+                  <div className="text-gray-600 font-mono text-xs mt-2 p-2 bg-white/50 rounded overflow-x-auto">
                     {JSON.stringify(explanation, null, 2)}
                   </div>
+                  {hab.rpi && (
+                    <div className="grid grid-cols-3 gap-2 mt-2 text-xs">
+                      <div className="p-1 bg-white rounded border text-center">Hazard: {hab.hazard_score}</div>
+                      <div className="p-1 bg-white rounded border text-center">Exposure: {hab.exposure_score}</div>
+                      <div className="p-1 bg-white rounded border text-center">Vulnerab: {hab.vulnerability_score}</div>
+                    </div>
+                  )}
                 </div>
                 );
               })}

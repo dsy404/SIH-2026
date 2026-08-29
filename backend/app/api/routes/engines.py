@@ -25,3 +25,12 @@ def run_vulnerability_engine():
     engine = VulnerabilityEngine()
     scored_habitations = engine.calculate_vulnerability_scores(data.get('habitations', []))
     return jsonify({"results": scored_habitations})
+
+@engines_bp.route("/master", methods=["POST"])
+def run_master_engine():
+    data = request.json
+    from app.engines.master_engine import MasterEngine
+    engine = MasterEngine()
+    weights = data.get('weights') # Optional dynamic weights
+    scored_habitations = engine.calculate_priority_index(data.get('habitations', []), data.get('hazards', []), weights)
+    return jsonify({"results": scored_habitations})
