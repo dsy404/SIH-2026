@@ -23,7 +23,7 @@ export default function RiskMapPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Geospatial Risk Map</h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-900 mt-1">
             Interactive visualization of habitations, hazard layers, and candidate relocation sites.
           </p>
         </div>
@@ -56,11 +56,11 @@ export default function RiskMapPage() {
         <div className="w-80 bg-white rounded-lg border shadow-sm flex flex-col overflow-hidden">
           <div className="bg-gray-50 border-b p-3">
             <h2 className="font-bold text-gray-800">Priority Relocation Targets</h2>
-            <p className="text-xs text-gray-500">Highest RPI Score</p>
+            <p className="text-xs text-gray-800">Highest RPI Score</p>
           </div>
           <div className="p-3 overflow-y-auto flex-1 space-y-3">
             {topVillages.length === 0 ? (
-              <div className="text-sm text-gray-500 italic text-center mt-10">Running Master Risk Engine...</div>
+              <div className="text-sm text-gray-800 italic text-center mt-10">Running Master Risk Engine...</div>
             ) : (
               topVillages.map((village, idx) => (
                 <div key={idx} className={`p-3 rounded border text-sm ${village.rpi > 75 ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200'}`}>

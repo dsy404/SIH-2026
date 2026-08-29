@@ -5,7 +5,7 @@ export default function DataManagementPage() {
     <div className="max-w-6xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Data Management Pipeline</h1>
-        <p className="text-gray-600 mt-1">
+        <p className="text-gray-900 mt-1">
           Upload, validate, and standardize geospatial datasets for the engine.
         </p>
       </div>
@@ -57,7 +57,7 @@ export default function DataManagementPage() {
               </table>
             </div>
             
-            <div className="mt-4 text-sm text-gray-500 italic">
+            <div className="mt-4 text-sm text-gray-800 italic">
               Note: Current prototype is operating on synthetic demonstration data.
             </div>
           </div>
@@ -80,12 +80,12 @@ export default function DataManagementPage() {
                 <span className="text-xs font-semibold">Clean</span>
               </div>
               <div className="flex flex-col items-center">
-                <div className="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center font-bold shadow mb-2">4</div>
-                <span className="text-xs font-semibold text-gray-500">Standardize</span>
+                <div className="w-8 h-8 rounded-full bg-gray-300 text-gray-900 flex items-center justify-center font-bold shadow mb-2">4</div>
+                <span className="text-xs font-semibold text-gray-800">Standardize</span>
               </div>
               <div className="flex flex-col items-center">
-                <div className="w-8 h-8 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center font-bold shadow mb-2">5</div>
-                <span className="text-xs font-semibold text-gray-500">Ready</span>
+                <div className="w-8 h-8 rounded-full bg-gray-300 text-gray-900 flex items-center justify-center font-bold shadow mb-2">5</div>
+                <span className="text-xs font-semibold text-gray-800">Ready</span>
               </div>
             </div>
           </div>

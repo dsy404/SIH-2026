@@ -2,7 +2,7 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center">
       <h1 className="text-3xl font-bold mb-4">Welcome to the Disaster Relocation DSS</h1>
-      <p className="text-gray-600 max-w-2xl">
+      <p className="text-gray-900 max-w-2xl">
         This is the government dashboard prototype. Currently, we have completed Phase 1 (Foundation). 
         The other pages in the sidebar will show a 404 until we build them out in the upcoming phases.
       </p>

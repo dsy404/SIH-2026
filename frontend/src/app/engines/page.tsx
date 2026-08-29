@@ -155,7 +155,7 @@ export default function EnginesTestingPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Analysis Engines (Testing)</h1>
-      <p className="text-gray-600">
+      <p className="text-gray-900">
         Run standalone API tests against the core backend engines to verify scoring logic.
       </p>
 
@@ -163,7 +163,7 @@ export default function EnginesTestingPage() {
         <div className="flex justify-between items-center border-b pb-4 mb-4">
           <div>
             <h2 className="text-xl font-bold text-red-700">Hazard Engine</h2>
-            <p className="text-sm text-gray-500 mt-1">Calculates point-in-polygon intersections to assign hazard severity scores (0-100).</p>
+            <p className="text-sm text-gray-800 mt-1">Calculates point-in-polygon intersections to assign hazard severity scores (0-100).</p>
           </div>
           <button 
             onClick={testHazardEngine}
@@ -177,7 +177,7 @@ export default function EnginesTestingPage() {
         <div className="flex justify-between items-center border-b pb-4 mb-4">
           <div>
             <h2 className="text-xl font-bold text-orange-600">Exposure Engine</h2>
-            <p className="text-sm text-gray-500 mt-1">Calculates physical vulnerability scores (0-100) based on elevation and slope.</p>
+            <p className="text-sm text-gray-800 mt-1">Calculates physical vulnerability scores (0-100) based on elevation and slope.</p>
           </div>
           <button 
             onClick={testExposureEngine}
@@ -191,7 +191,7 @@ export default function EnginesTestingPage() {
         <div className="flex justify-between items-center border-b pb-4 mb-4">
           <div>
             <h2 className="text-xl font-bold text-blue-600">Vulnerability Engine</h2>
-            <p className="text-sm text-gray-500 mt-1">Calculates socio-economic vulnerability (0-100) based on population density and household size.</p>
+            <p className="text-sm text-gray-800 mt-1">Calculates socio-economic vulnerability (0-100) based on population density and household size.</p>
           </div>
           <button 
             onClick={testVulnerabilityEngine}
@@ -205,7 +205,7 @@ export default function EnginesTestingPage() {
         <div className="flex justify-between items-center border-b pb-4 mb-4">
           <div>
             <h2 className="text-xl font-bold text-purple-700">Master Risk Engine (RPI)</h2>
-            <p className="text-sm text-gray-500 mt-1">Aggregates Hazard, Exposure, and Vulnerability using dynamic weights to output the final Relocation Priority Index.</p>
+            <p className="text-sm text-gray-800 mt-1">Aggregates Hazard, Exposure, and Vulnerability using dynamic weights to output the final Relocation Priority Index.</p>
           </div>
           <button 
             onClick={testMasterEngine}
@@ -236,7 +236,7 @@ export default function EnginesTestingPage() {
                       Score: {typeof score === 'number' ? score.toFixed(1) : score}
                     </span>
                   </div>
-                  <div className="text-gray-600 font-mono text-xs mt-2 p-2 bg-white/50 rounded overflow-x-auto">
+                  <div className="text-gray-900 font-mono text-xs mt-2 p-2 bg-white/50 rounded overflow-x-auto">
                     {JSON.stringify(explanation, null, 2)}
                   </div>
                   {hab.rpi && (
