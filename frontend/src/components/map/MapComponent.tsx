@@ -17,26 +17,99 @@ const defaultCenter: L.LatLngTuple = [25.0, 82.0];
 const defaultZoom = 10;
 
 export default function MapComponent() {
-  const [habitations, setHabitations] = useState<any>(null);
+  const [habitationsFC, setHabitationsFC] = useState<any>(null); // GeoJSON FeatureCollection
   const [hazards, setHazards] = useState<any>(null);
   const [sites, setSites] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch synthetic data from public folder
-    fetch('/data/habitations.geojson').then(res => res.json()).then(setHabitations);
-    fetch('/data/hazards.geojson').then(res => res.json()).then(setHazards);
-    fetch('/data/candidate_sites.geojson').then(res => res.json()).then(setSites);
+    async function loadScoredData() {
+      try {
+        const habRes = await fetch('/data/habitations.geojson');
+        const habData = await habRes.json();
+        
+        const hazRes = await fetch('/data/hazards.geojson');
+        const hazData = await hazRes.json();
+        setHazards(hazData);
+        
+        const siteRes = await fetch('/data/candidate_sites.geojson');
+        const siteData = await siteRes.json();
+        setSites(siteData);
+
+        // Prepare flat data for engine
+        const flatHabs = habData.features.map((f: any) => ({
+          ...f.properties,
+          longitude: f.geometry.coordinates[0],
+          latitude: f.geometry.coordinates[1],
+          geom_geojson: JSON.stringify(f.geometry)
+        }));
+        
+        const flatHazs = hazData.features.map((f: any) => ({
+          ...f.properties,
+          geom_geojson: JSON.stringify(f.geometry)
+        }));
+
+        // Call Master Engine
+        const apiRes = await fetch('http://localhost:8000/api/engines/master', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ habitations: flatHabs, hazards: flatHazs })
+        });
+        
+        if (apiRes.ok) {
+          const apiData = await apiRes.json();
+          // Merge scores back into GeoJSON FeatureCollection properties
+          const scoredFeatures = habData.features.map((f: any) => {
+            const scored = apiData.results.find((r: any) => r.id === f.properties.id);
+            return {
+              ...f,
+              properties: { ...f.properties, ...scored }
+            };
+          });
+          setHabitationsFC({ type: "FeatureCollection", features: scoredFeatures });
+          
+          // Emit a custom event for the page to catch and show top 5 in sidebar
+          window.dispatchEvent(new CustomEvent('map-scored-data', { detail: apiData.results }));
+        } else {
+          setHabitationsFC(habData); // fallback to raw
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadScoredData();
   }, []);
 
+  const getMarkerColor = (rpi?: number) => {
+    if (rpi === undefined) return "#888888";
+    if (rpi > 75) return "#ff0000"; // Critical
+    if (rpi > 50) return "#ff8800"; // High
+    if (rpi > 25) return "#ffcc00"; // Moderate
+    return "#00cc00"; // Low
+  };
+
   const onEachHabitation = (feature: any, layer: L.Layer) => {
-    if (feature.properties && feature.properties.name) {
+    const p = feature.properties;
+    if (p && p.name) {
       layer.bindPopup(`
-        <div class="p-2">
-          <h3 class="font-bold text-lg border-b pb-1 mb-2">${feature.properties.name}</h3>
-          <p><strong>Population:</strong> ${feature.properties.population}</p>
-          <p><strong>Households:</strong> ${feature.properties.households}</p>
-          <p><strong>Elevation:</strong> ${feature.properties.elevation} m</p>
-          <p class="mt-2 text-xs text-red-500 font-bold">${feature.properties.dataset_type}</p>
+        <div class="p-2 w-64">
+          <div class="flex justify-between items-start mb-2">
+            <h3 class="font-bold text-lg leading-tight">${p.name}</h3>
+            ${p.risk_category ? `<span class="text-[10px] px-2 py-1 rounded bg-black text-white font-bold whitespace-nowrap ml-2">${p.risk_category}</span>` : ''}
+          </div>
+          
+          <div class="bg-gray-100 p-2 rounded mb-2 text-center border ${p.rpi > 75 ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-300'}">
+            <div class="text-xs uppercase font-bold text-gray-500">Relocation Priority Index</div>
+            <div class="text-3xl font-black">${p.rpi !== undefined ? p.rpi.toFixed(1) : 'N/A'}</div>
+          </div>
+          
+          <div class="grid grid-cols-3 gap-1 text-[10px] text-center font-mono">
+            <div class="bg-white border p-1 rounded">Haz<br/><b>${p.hazard_score ?? 0}</b></div>
+            <div class="bg-white border p-1 rounded">Exp<br/><b>${p.exposure_score ?? 0}</b></div>
+            <div class="bg-white border p-1 rounded">Vul<br/><b>${p.vulnerability_score ?? 0}</b></div>
+          </div>
         </div>
       `);
     }
@@ -52,6 +125,12 @@ export default function MapComponent() {
 
   return (
     <div className="h-full w-full relative border rounded-lg overflow-hidden shadow-sm">
+      {loading && (
+        <div className="absolute inset-0 bg-white/80 z-[2000] flex items-center justify-center">
+          <div className="text-lg font-bold text-gray-700 animate-pulse">Running Master Risk Engine...</div>
+        </div>
+      )}
+      
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-[1000] bg-red-600 text-white px-6 py-2 rounded-full font-bold shadow-lg uppercase text-sm border-2 border-white">
         Demonstration Study Region
       </div>
@@ -70,7 +149,7 @@ export default function MapComponent() {
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="Satellite (Esri)">
             <TileLayer
-              attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+              attribution='Tiles &copy; Esri'
               url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
             />
           </LayersControl.BaseLayer>
@@ -79,19 +158,20 @@ export default function MapComponent() {
             {hazards && <GeoJSON data={hazards} style={hazardStyle} />}
           </LayersControl.Overlay>
 
-          <LayersControl.Overlay checked name="Habitations">
-            {habitations && (
+          <LayersControl.Overlay checked name="Habitations (Scored)">
+            {habitationsFC && (
               <GeoJSON 
-                data={habitations} 
+                key={habitationsFC.features[0]?.properties?.rpi ? 'scored' : 'unscored'}
+                data={habitationsFC} 
                 onEachFeature={onEachHabitation}
                 pointToLayer={(feature, latlng) => {
                   return L.circleMarker(latlng, {
-                    radius: 6,
-                    fillColor: "#ff7800",
-                    color: "#000",
-                    weight: 1,
+                    radius: feature.properties.rpi > 75 ? 9 : 6,
+                    fillColor: getMarkerColor(feature.properties.rpi),
+                    color: "#fff",
+                    weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.8
+                    fillOpacity: 0.9
                   });
                 }}
               />
@@ -105,8 +185,8 @@ export default function MapComponent() {
                 pointToLayer={(feature, latlng) => {
                   return L.circleMarker(latlng, {
                     radius: 8,
-                    fillColor: "#00ff00",
-                    color: "#000",
+                    fillColor: "#0055ff",
+                    color: "#fff",
                     weight: 2,
                     opacity: 1,
                     fillOpacity: 0.8
