@@ -19,6 +19,9 @@ app.include_router(datasets.router, prefix=settings.api_prefix)
 from .api.routes import geospatial
 app.include_router(geospatial.router, prefix=settings.api_prefix)
 
+from .api.routes import engines
+app.include_router(engines.router, prefix=settings.api_prefix)
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok", "app": settings.app_name}
