@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Dict, Any
 
 class ConfidenceService:
@@ -18,3 +19,4 @@ class ConfidenceService:
             record["confidence"] = confidence_label
             
         return data
+

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Dict, Any
 from datetime import datetime
 
@@ -32,3 +33,4 @@ class DataCleaner:
             cleaned_data.append(cleaned_record)
             
         return cleaned_data
+

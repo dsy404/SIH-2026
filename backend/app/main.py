@@ -1,27 +1,18 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from flask import Flask, jsonify
+from flask_cors import CORS
 from .config import settings
-from .api.routes import datasets
 
-app = FastAPI(title=settings.app_name, version="0.1.0")
+from .api.routes.datasets import datasets_bp
+from .api.routes.geospatial import geospatial_bp
+from .api.routes.engines import engines_bp
 
-# Configure CORS for frontend access
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app = Flask(settings.app_name)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-app.include_router(datasets.router, prefix=settings.api_prefix)
+app.register_blueprint(datasets_bp, url_prefix=settings.api_prefix + "/datasets")
+app.register_blueprint(geospatial_bp, url_prefix=settings.api_prefix + "/geospatial")
+app.register_blueprint(engines_bp, url_prefix=settings.api_prefix + "/engines")
 
-from .api.routes import geospatial
-app.include_router(geospatial.router, prefix=settings.api_prefix)
-
-from .api.routes import engines
-app.include_router(engines.router, prefix=settings.api_prefix)
-
-@app.get("/api/health")
-async def health_check():
-    return {"status": "ok", "app": settings.app_name}
+@app.route("/api/health", methods=["GET"])
+def health_check():
+    return jsonify({"status": "ok", "app": settings.app_name})

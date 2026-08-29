@@ -1,11 +1,8 @@
-from pydantic_settings import BaseSettings
+import os
 
-class Settings(BaseSettings):
-    app_name: str = "Disaster Relocation DSS"
-    api_prefix: str = "/api"
-    debug: bool = True
-    
-    class Config:
-        env_file = ".env"
+class Settings:
+    app_name = "Disaster Relocation DSS"
+    api_prefix = "/api"
+    debug = True
 
 settings = Settings()

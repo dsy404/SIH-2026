@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Dict, Any, Tuple
 
 class DataValidator:
@@ -41,3 +42,4 @@ class DataValidator:
                 valid.append(record)
                 
         return valid, invalid
+

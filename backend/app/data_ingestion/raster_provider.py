@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Dict, Any
 from .base import DataProvider
 
@@ -8,3 +9,4 @@ class RasterProvider(DataProvider):
 
     def get_supported_format(self) -> str:
         return "raster"
+

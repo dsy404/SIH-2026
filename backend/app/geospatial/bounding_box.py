@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Dict, Any, Tuple
 
 def calculate_bounding_box(data: List[Dict[str, Any]]) -> Tuple[float, float, float, float]:
@@ -23,3 +24,4 @@ def calculate_bounding_box(data: List[Dict[str, Any]]) -> Tuple[float, float, fl
             max_lat = max(max_lat, lat)
             
     return (min_lon, min_lat, max_lon, max_lat)
+

@@ -50,6 +50,38 @@ export default function EnginesTestingPage() {
     }
   };
 
+  const testExposureEngine = async () => {
+    setLoading(true);
+    setError("");
+    setResult(null);
+    try {
+      const habRes = await fetch('/data/habitations.geojson');
+      const habData = await habRes.json();
+      
+      const habitations = habData.features.map((f: any) => ({
+        ...f.properties,
+        longitude: f.geometry.coordinates[0],
+        latitude: f.geometry.coordinates[1],
+        geom_geojson: JSON.stringify(f.geometry)
+      }));
+      
+      const res = await fetch('http://localhost:8000/api/engines/exposure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ habitations })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Engine failed');
+      
+      setResult(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Analysis Engines (Testing)</h1>
@@ -68,7 +100,21 @@ export default function EnginesTestingPage() {
             disabled={loading}
             className="bg-red-600 text-white px-4 py-2 rounded font-medium hover:bg-red-700 disabled:opacity-50"
           >
-            {loading ? "Running..." : "Run Test (Demo Data)"}
+            {loading ? "Running..." : "Test Hazard"}
+          </button>
+        </div>
+
+        <div className="flex justify-between items-center border-b pb-4 mb-4">
+          <div>
+            <h2 className="text-xl font-bold text-orange-600">Exposure Engine</h2>
+            <p className="text-sm text-gray-500 mt-1">Calculates physical vulnerability scores (0-100) based on elevation and slope.</p>
+          </div>
+          <button 
+            onClick={testExposureEngine}
+            disabled={loading}
+            className="bg-orange-600 text-white px-4 py-2 rounded font-medium hover:bg-orange-700 disabled:opacity-50"
+          >
+            {loading ? "Running..." : "Test Exposure"}
           </button>
         </div>
 

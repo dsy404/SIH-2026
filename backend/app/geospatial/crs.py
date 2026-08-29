@@ -1,3 +1,4 @@
+from __future__ import annotations
 import math
 
 def calculate_utm_zone(longitude: float) -> int:
@@ -35,3 +36,4 @@ def determine_crs_from_centroid(data: list) -> str:
     # Northern hemisphere EPSG codes are 326xx, Southern are 327xx
     epsg_base = 32600 if avg_lat >= 0 else 32700
     return f"EPSG:{epsg_base + zone}"
+

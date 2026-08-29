@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Dict, Any
 from shapely.geometry import Point, shape
 import json
@@ -56,3 +57,4 @@ class HazardEngine:
             }
             
         return habitations
+

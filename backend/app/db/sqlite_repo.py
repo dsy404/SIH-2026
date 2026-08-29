@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sqlite3
 import json
 from typing import List, Dict, Any, Optional
@@ -56,3 +57,4 @@ class SQLiteRepository(IRepository):
         conn.commit()
         conn.close()
         return deleted
+

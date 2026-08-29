@@ -1,59 +1,53 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
-from typing import List, Optional
+from flask import Blueprint, request, jsonify
 import json
+from app.data_ingestion.demo_provider import DemoProvider
+from app.data_ingestion.csv_provider import CSVProvider
+from app.data_ingestion.geojson_provider import GeoJSONProvider
+from app.data_ingestion.validator import DataValidator
+from app.data_ingestion.cleaner import DataCleaner
+from app.data_ingestion.confidence_service import ConfidenceService
+from app.geospatial.crs import determine_crs_from_centroid
 
-from ..data_ingestion.demo_provider import DemoProvider
-from ..data_ingestion.csv_provider import CSVProvider
-from ..data_ingestion.geojson_provider import GeoJSONProvider
-from ..data_ingestion.validator import DataValidator
+datasets_bp = Blueprint('datasets', __name__)
 
-router = APIRouter(prefix="/datasets", tags=["datasets"])
-
-@router.post("/upload")
-async def upload_dataset(
-    file: UploadFile = File(...), 
-    category: str = Form(...),
-    format: str = Form(...)
-):
+@datasets_bp.route("/upload", methods=["POST"])
+def upload_dataset():
+    if 'file' not in request.files and request.form.get('format') != 'demo':
+        return jsonify({"detail": "No file part"}), 400
+        
+    file = request.files.get('file')
+    category = request.form.get('category')
+    format = request.form.get('format')
+    
     provider = None
     if format == "demo":
         provider = DemoProvider()
-        source = file.filename # Using filename as identifier for demo provider
-        
+        source = file.filename if file else "habitations.geojson"
     elif format == "csv":
         provider = CSVProvider()
-        source = (await file.read()).decode("utf-8")
-        
+        source = file.read().decode("utf-8")
     elif format == "geojson":
         provider = GeoJSONProvider()
-        source = (await file.read()).decode("utf-8")
-        
+        source = file.read().decode("utf-8")
     elif format in ["shapefile", "raster"]:
-        raise HTTPException(status_code=501, detail=f"{format.capitalize()} format not implemented yet.")
+        return jsonify({"detail": f"{format.capitalize()} format not implemented yet."}), 501
     else:
-        raise HTTPException(status_code=400, detail="Unsupported format")
+        return jsonify({"detail": "Unsupported format"}), 400
 
     try:
         raw_data = provider.read_data(source)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        return jsonify({"detail": str(e)}), 400
 
-    # Basic required fields based on category
     required_fields = []
     if category == "habitations":
         required_fields = ["name", "population"]
     elif category == "hazards":
         required_fields = ["type", "severity"]
 
-    # Validate
     validator = DataValidator(required_fields)
     valid_data, invalid_data = validator.validate(raw_data)
 
-    # Clean and Standardize valid data
-    from ..data_ingestion.cleaner import DataCleaner
-    from ..data_ingestion.confidence_service import ConfidenceService
-    from ..geospatial.crs import determine_crs_from_centroid
-    
     cleaner = DataCleaner()
     cleaned_data = cleaner.clean(valid_data)
     
@@ -62,7 +56,7 @@ async def upload_dataset(
     
     projected_crs = determine_crs_from_centroid(final_data)
 
-    return {
+    return jsonify({
         "status": "success",
         "category": category,
         "format": format,
@@ -70,5 +64,5 @@ async def upload_dataset(
         "total_records": len(raw_data),
         "valid_records_count": len(valid_data),
         "invalid_records_count": len(invalid_data),
-        "errors": invalid_data[:10] # Return top 10 errors for preview
-    }
+        "errors": invalid_data[:10]
+    })

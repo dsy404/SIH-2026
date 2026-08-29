@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -43,3 +44,4 @@ class CandidateSite(BaseEntity):
     infrastructure_score: Optional[float] = None
 
 # ... Other models for MVP (Population, Infrastructure, RiskScores, etc.)
+

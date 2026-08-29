@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Dict, Any
 import numpy as np
 from sklearn.cluster import DBSCAN
@@ -45,3 +46,4 @@ def find_clusters(data: List[Dict[str, Any]], epsilon_km: float = 2.0, min_sampl
             record['cluster_id'] = -1
             
     return data
+

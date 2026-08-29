@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Dict, Any
 import json
 import os
@@ -36,3 +37,4 @@ class DemoProvider(DataProvider):
 
     def get_supported_format(self) -> str:
         return "demo"
+

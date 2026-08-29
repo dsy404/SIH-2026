@@ -1,35 +1,24 @@
-from fastapi import APIRouter
-from typing import List, Dict, Any
-from ..geospatial.distance import haversine_distance, euclidean_distance
-from ..geospatial.bounding_box import calculate_bounding_box
-from ..geospatial.clustering import find_clusters
-from pydantic import BaseModel
+from flask import Blueprint, request, jsonify
+from app.geospatial.distance import haversine_distance, euclidean_distance
+from app.geospatial.bounding_box import calculate_bounding_box
+from app.geospatial.clustering import find_clusters
 
-router = APIRouter(prefix="/geospatial", tags=["geospatial"])
+geospatial_bp = Blueprint('geospatial', __name__)
 
-class Coordinates(BaseModel):
-    lon1: float
-    lat1: float
-    lon2: float
-    lat2: float
+@geospatial_bp.route("/distance", methods=["POST"])
+def get_distance():
+    coords = request.json
+    dist = haversine_distance((coords['lon1'], coords['lat1']), (coords['lon2'], coords['lat2']))
+    return jsonify({"distance_km": dist})
 
-@router.post("/distance")
-def get_distance(coords: Coordinates):
-    """Calculate Haversine distance between two points."""
-    dist = haversine_distance((coords.lon1, coords.lat1), (coords.lon2, coords.lat2))
-    return {"distance_km": dist}
+@geospatial_bp.route("/bounding_box", methods=["POST"])
+def get_bounding_box():
+    dataset = request.json
+    bbox = calculate_bounding_box(dataset.get('data', []))
+    return jsonify({"bounding_box": {"min_lon": bbox[0], "min_lat": bbox[1], "max_lon": bbox[2], "max_lat": bbox[3]}})
 
-class GeoDataset(BaseModel):
-    data: List[Dict[str, Any]]
-
-@router.post("/bounding_box")
-def get_bounding_box(dataset: GeoDataset):
-    """Calculate the bounding box of a dataset."""
-    bbox = calculate_bounding_box(dataset.data)
-    return {"bounding_box": {"min_lon": bbox[0], "min_lat": bbox[1], "max_lon": bbox[2], "max_lat": bbox[3]}}
-
-@router.post("/cluster")
-def apply_clustering(dataset: GeoDataset):
-    """Group habitations into spatial clusters."""
-    clustered_data = find_clusters(dataset.data, epsilon_km=2.0, min_samples=2)
-    return {"clustered_data": clustered_data}
+@geospatial_bp.route("/cluster", methods=["POST"])
+def apply_clustering():
+    dataset = request.json
+    clustered_data = find_clusters(dataset.get('data', []), epsilon_km=2.0, min_samples=2)
+    return jsonify({"clustered_data": clustered_data})

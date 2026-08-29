@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
@@ -11,3 +12,4 @@ class DataProvider(ABC):
     def get_supported_format(self) -> str:
         """Returns the format supported by this provider (e.g., 'csv', 'geojson')."""
         pass
+

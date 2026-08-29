@@ -1,3 +1,4 @@
+from __future__ import annotations
 import math
 from typing import Tuple
 
@@ -27,3 +28,4 @@ def euclidean_distance(coord1: Tuple[float, float], coord2: Tuple[float, float])
     coord: (x, y)
     """
     return math.sqrt((coord1[0] - coord2[0])**2 + (coord1[1] - coord2[1])**2)
+

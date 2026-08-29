@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Optional, Any, Dict
 from .models import BaseEntity
@@ -19,3 +20,4 @@ class IRepository(ABC):
     @abstractmethod
     def delete(self, entity_type: str, entity_id: str) -> bool:
         pass
+

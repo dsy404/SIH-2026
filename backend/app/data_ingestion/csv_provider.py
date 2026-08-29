@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Dict, Any
 from .base import DataProvider
 import csv
@@ -19,3 +20,4 @@ class CSVProvider(DataProvider):
 
     def get_supported_format(self) -> str:
         return "csv"
+
