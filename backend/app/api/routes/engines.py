@@ -17,3 +17,11 @@ def run_exposure_engine():
     engine = ExposureEngine()
     scored_habitations = engine.calculate_exposure_scores(data.get('habitations', []))
     return jsonify({"results": scored_habitations})
+
+@engines_bp.route("/vulnerability", methods=["POST"])
+def run_vulnerability_engine():
+    data = request.json
+    from app.engines.vulnerability_engine import VulnerabilityEngine
+    engine = VulnerabilityEngine()
+    scored_habitations = engine.calculate_vulnerability_scores(data.get('habitations', []))
+    return jsonify({"results": scored_habitations})
