@@ -45,13 +45,28 @@ async def upload_dataset(
     elif category == "hazards":
         required_fields = ["type", "severity"]
 
+    # Validate
     validator = DataValidator(required_fields)
     valid_data, invalid_data = validator.validate(raw_data)
+
+    # Clean and Standardize valid data
+    from ..data_ingestion.cleaner import DataCleaner
+    from ..data_ingestion.confidence_service import ConfidenceService
+    from ..geospatial.crs import determine_crs_from_centroid
+    
+    cleaner = DataCleaner()
+    cleaned_data = cleaner.clean(valid_data)
+    
+    confidence_svc = ConfidenceService()
+    final_data = confidence_svc.assign_confidence(cleaned_data, format, category)
+    
+    projected_crs = determine_crs_from_centroid(final_data)
 
     return {
         "status": "success",
         "category": category,
         "format": format,
+        "projected_crs": projected_crs,
         "total_records": len(raw_data),
         "valid_records_count": len(valid_data),
         "invalid_records_count": len(invalid_data),

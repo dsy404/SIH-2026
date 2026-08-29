@@ -139,8 +139,12 @@ export default function UploadForm() {
           )}
           
           {status.invalid_records_count === 0 && status.total_records > 0 && (
-            <div className="bg-green-50 p-3 rounded border border-green-200 text-sm text-green-800 font-medium">
-              ✅ Dataset validated successfully and is ready for analysis.
+            <div className="bg-green-50 p-4 rounded border border-green-200 text-sm text-green-800 flex flex-col space-y-2">
+              <div className="font-semibold text-base">✅ Dataset validated and standardized successfully.</div>
+              <div className="grid grid-cols-2 gap-2 mt-2 bg-white/50 p-3 rounded">
+                <div><span className="font-medium">Projected CRS:</span> {status.projected_crs || "N/A"}</div>
+                <div><span className="font-medium">Data Confidence:</span> {status.format === 'demo' ? 'SYNTHETIC' : (status.format === 'csv' ? 'MODERATE' : 'HIGH')}</div>
+              </div>
             </div>
           )}
         </div>
