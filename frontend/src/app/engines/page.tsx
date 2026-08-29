@@ -112,6 +112,45 @@ export default function EnginesTestingPage() {
       setLoading(false);
     }
   };
+  const testMasterEngine = async () => {
+    setLoading(true);
+    setError("");
+    setResult(null);
+    try {
+      const habRes = await fetch('/data/habitations.geojson');
+      const habData = await habRes.json();
+      
+      const hazRes = await fetch('/data/hazards.geojson');
+      const hazData = await hazRes.json();
+      
+      const habitations = habData.features.map((f: any) => ({
+        ...f.properties,
+        longitude: f.geometry.coordinates[0],
+        latitude: f.geometry.coordinates[1],
+        geom_geojson: JSON.stringify(f.geometry)
+      }));
+      
+      const hazards = hazData.features.map((f: any) => ({
+        ...f.properties,
+        geom_geojson: JSON.stringify(f.geometry)
+      }));
+      
+      const res = await fetch('http://localhost:8000/api/engines/master', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ habitations, hazards })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Engine failed');
+      
+      setResult(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
