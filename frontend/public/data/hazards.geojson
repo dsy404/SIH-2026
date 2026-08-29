@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              82.0,
+              25.0
+            ],
+            [
+              82.04,
+              25.0
+            ],
+            [
+              82.04,
+              25.04
+            ],
+            [
+              82.0,
+              25.04
+            ],
+            [
+              82.0,
+              25.0
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "HZ001",
+        "type": "Flood",
+        "severity": "High",
+        "dataset_type": "DEMO / SYNTHETIC DATA"
+      }
+    }
+  ]
+}
