@@ -6,6 +6,7 @@ export default function Sidebar() {
     { name: 'Risk Map', path: '/risk-map' },
     { name: 'Data Management', path: '/data-management' },
     { name: 'Habitations', path: '/habitations' },
+    { name: 'ML Evaluation', path: '/ml-evaluation' },
     { name: 'Red Zones', path: '/red-zones' },
     { name: 'Safe Sites', path: '/safe-sites' },
     { name: 'Capacity', path: '/capacity' },
@@ -13,6 +14,7 @@ export default function Sidebar() {
     { name: 'Action Plan', path: '/action-plan' },
     { name: 'Verification', path: '/field-verification' },
     { name: 'Post-Relocation', path: '/post-relocation' },
+    { name: 'Notifications', path: '/notifications' },
     { name: 'Methodology', path: '/methodology' },
   ];
 

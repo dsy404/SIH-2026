@@ -23,6 +23,9 @@ export default function Home() {
           <li>
             <a href="/engines" className="text-blue-700 font-semibold hover:underline">Engine Testing UI</a> - Run raw API queries against the backend calculation engines.
           </li>
+          <li>
+            <a href="/ml-evaluation" className="text-blue-700 font-semibold hover:underline">ML Evaluation</a> - View model performance, feature importance, and risk score distribution.
+          </li>
         </ul>
       </div>
     </div>
