@@ -28,10 +28,10 @@ test.describe("Home Page", () => {
     ).toBeVisible();
 
     // Verify quick links exist
-    await expect(page.getByRole("link", { name: /Geospatial Risk Map/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Data Management Pipeline/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: /Engine Testing UI/ })).toBeVisible();
-    await expect(page.getByRole("link", { name: /ML Evaluation/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Geospatial Risk Map" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Data Management Pipeline" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Engine Testing UI" })).toBeVisible();
+    await expect(page.locator("ul").getByRole("link", { name: "ML Evaluation" })).toBeVisible();
   });
 });
 
@@ -49,14 +49,14 @@ test.describe("Sidebar Navigation", () => {
     ];
     
     for (const linkName of expectedLinks) {
-      await expect(page.getByRole("link", { name: linkName })).toBeVisible();
+      await expect(page.locator("nav").getByRole("link", { name: linkName, exact: true })).toBeVisible();
     }
   });
 
   test("should navigate to Risk Map page", async ({ page }) => {
     await page.goto(BASE_URL);
     
-    await page.getByRole("link", { name: "Risk Map" }).click();
+    await page.locator("nav").getByRole("link", { name: "Risk Map", exact: true }).click();
     await page.waitForURL("**/risk-map");
     
     await expect(
@@ -67,7 +67,7 @@ test.describe("Sidebar Navigation", () => {
   test("should navigate to ML Evaluation page", async ({ page }) => {
     await page.goto(BASE_URL);
     
-    await page.getByRole("link", { name: "ML Evaluation" }).click();
+    await page.locator("nav").getByRole("link", { name: "ML Evaluation", exact: true }).click();
     await page.waitForURL("**/ml-evaluation");
     
     await expect(
