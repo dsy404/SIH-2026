@@ -35,6 +35,9 @@ export default function Header() {
             {APP_CONFIG.demoRegion}
           </span>
         )}
+        <span className="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">
+          SIH 2026 Prototype
+        </span>
       </div>
       <div className="flex items-center space-x-4">
         {/* Notification Bell */}
