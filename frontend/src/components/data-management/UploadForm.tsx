@@ -35,7 +35,7 @@ export default function UploadForm() {
 
     try {
       // In a real app this would point to the deployed backend
-      const res = await fetch("http://localhost:8000/api/datasets/upload", {
+      const res = await fetch("http://localhost:5000/api/datasets/upload", {
         method: "POST",
         body: formData,
       });

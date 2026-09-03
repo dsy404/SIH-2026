@@ -61,7 +61,7 @@ export default function MLEvaluationPage() {
           geom_geojson: JSON.stringify(f.geometry),
         }));
 
-        const apiRes = await fetch("http://localhost:8000/api/engines/master", {
+        const apiRes = await fetch("http://localhost:5000/api/engines/master", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ habitations, hazards }),
@@ -109,7 +109,7 @@ export default function MLEvaluationPage() {
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
-          <strong>Error:</strong> {error}. Make sure the backend is running on <code>localhost:8000</code>.
+          <strong>Error:</strong> {error}. Make sure the backend is running on <code>localhost:5000</code>.
         </div>
       )}
 

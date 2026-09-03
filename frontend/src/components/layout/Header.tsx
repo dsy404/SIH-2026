@@ -10,7 +10,7 @@ export default function Header() {
   useEffect(() => {
     const fetchCount = async () => {
       try {
-        const res = await fetch('http://localhost:8000/api/alerts/notifications/count');
+        const res = await fetch('http://localhost:5000/api/alerts/notifications/count');
         if (res.ok) {
           const data = await res.json();
           setUnreadCount(data.unread || 0);

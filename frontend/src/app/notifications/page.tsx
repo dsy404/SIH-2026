@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = "http://localhost:5000/api";
 
 type Alert = {
   id: string;
@@ -182,7 +182,7 @@ export default function NotificationsPage() {
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
-          <strong>Error:</strong> {error}. Make sure the backend is running on <code>localhost:8000</code>.
+          <strong>Error:</strong> {error}. Make sure the backend is running on <code>localhost:5000</code>.
         </div>
       )}
 

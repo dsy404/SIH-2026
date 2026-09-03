@@ -33,7 +33,7 @@ export default function EnginesTestingPage() {
       }));
 
       // Call the hazard engine API
-      const res = await fetch('http://localhost:8000/api/engines/hazard', {
+      const res = await fetch('http://localhost:5000/api/engines/hazard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ habitations, hazards })
@@ -65,7 +65,7 @@ export default function EnginesTestingPage() {
         geom_geojson: JSON.stringify(f.geometry)
       }));
       
-      const res = await fetch('http://localhost:8000/api/engines/exposure', {
+      const res = await fetch('http://localhost:5000/api/engines/exposure', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ habitations })
@@ -96,7 +96,7 @@ export default function EnginesTestingPage() {
         geom_geojson: JSON.stringify(f.geometry)
       }));
       
-      const res = await fetch('http://localhost:8000/api/engines/vulnerability', {
+      const res = await fetch('http://localhost:5000/api/engines/vulnerability', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ habitations })
@@ -135,7 +135,7 @@ export default function EnginesTestingPage() {
         geom_geojson: JSON.stringify(f.geometry)
       }));
       
-      const res = await fetch('http://localhost:8000/api/engines/master', {
+      const res = await fetch('http://localhost:5000/api/engines/master', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ habitations, hazards })

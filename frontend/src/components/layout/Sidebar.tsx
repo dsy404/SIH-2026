@@ -10,6 +10,7 @@ export default function Sidebar() {
     { name: 'Red Zones', path: '/red-zones' },
     { name: 'Safe Sites', path: '/safe-sites' },
     { name: 'Capacity', path: '/capacity' },
+    { name: 'Necessity', path: '/necessity' },
     { name: 'Optimizer', path: '/optimizer' },
     { name: 'Action Plan', path: '/action-plan' },
     { name: 'Verification', path: '/field-verification' },
