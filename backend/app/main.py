@@ -9,6 +9,8 @@ from .api.routes.alerts import alerts_bp
 from .api.routes.safe_sites import safe_sites_bp
 from .api.routes.capacity import capacity_bp
 from .api.routes.necessity import necessity_bp
+from .api.routes.optimizer import optimizer_bp
+from .api.routes.dashboard import dashboard_bp
 
 app = Flask(settings.app_name)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -20,6 +22,8 @@ app.register_blueprint(alerts_bp, url_prefix=settings.api_prefix + "/alerts")
 app.register_blueprint(safe_sites_bp, url_prefix=settings.api_prefix + "/safe-sites")
 app.register_blueprint(capacity_bp, url_prefix=settings.api_prefix + "/capacity")
 app.register_blueprint(necessity_bp, url_prefix=settings.api_prefix + "/necessity")
+app.register_blueprint(optimizer_bp, url_prefix=settings.api_prefix + "/optimizer")
+app.register_blueprint(dashboard_bp, url_prefix=settings.api_prefix + "/dashboard")
 
 @app.route("/api/health", methods=["GET"])
 def health_check():
