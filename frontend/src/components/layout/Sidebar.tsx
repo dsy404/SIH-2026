@@ -25,7 +25,7 @@ export default function Sidebar() {
       <nav className="flex-1 space-y-2">
         {routes.map((route) => (
           <Link 
-            key={route.path} 
+            key={route.name} 
             href={route.path}
             className="block px-4 py-2 rounded hover:bg-gray-800 transition-colors"
           >
