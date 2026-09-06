@@ -36,6 +36,18 @@ def list_habitations():
         session.close()
 
 
+@habitations_bp.route("/geojson", methods=["GET"])
+def habitations_geojson():
+    """Return all habitations as a GeoJSON FeatureCollection (for map)."""
+    Session = get_session_factory()
+    session = Session()
+    try:
+        habs = Repository.get_all_habitations(session)
+        features = [Repository.habitation_to_geojson_feature(h) for h in habs]
+        return jsonify({"type": "FeatureCollection", "features": features})
+    finally:
+        session.close()
+
 @habitations_bp.route("/<hab_id>", methods=["GET"])
 def get_habitation(hab_id: str):
     """Get a single habitation with all associated data."""
@@ -75,19 +87,6 @@ def get_habitation(hab_id: str):
             for a in hab.assignments
         ]
         return jsonify(d)
-    finally:
-        session.close()
-
-
-@habitations_bp.route("/geojson", methods=["GET"])
-def habitations_geojson():
-    """Return all habitations as a GeoJSON FeatureCollection (for map)."""
-    Session = get_session_factory()
-    session = Session()
-    try:
-        habs = Repository.get_all_habitations(session)
-        features = [Repository.habitation_to_geojson_feature(h) for h in habs]
-        return jsonify({"type": "FeatureCollection", "features": features})
     finally:
         session.close()
 

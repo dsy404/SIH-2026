@@ -20,6 +20,18 @@ def list_sites():
         session.close()
 
 
+@sites_bp.route("/geojson", methods=["GET"])
+def sites_geojson():
+    """Return all sites as a GeoJSON FeatureCollection (for map)."""
+    Session = get_session_factory()
+    session = Session()
+    try:
+        sites = Repository.get_all_sites(session)
+        features = [Repository.site_to_geojson_feature(s) for s in sites]
+        return jsonify({"type": "FeatureCollection", "features": features})
+    finally:
+        session.close()
+
 @sites_bp.route("/<site_id>", methods=["GET"])
 def get_site(site_id: str):
     """Get a single candidate site with capacity data."""
@@ -42,18 +54,5 @@ def get_site(site_id: str):
             for c in caps
         ]
         return jsonify(d)
-    finally:
-        session.close()
-
-
-@sites_bp.route("/geojson", methods=["GET"])
-def sites_geojson():
-    """Return all sites as a GeoJSON FeatureCollection (for map)."""
-    Session = get_session_factory()
-    session = Session()
-    try:
-        sites = Repository.get_all_sites(session)
-        features = [Repository.site_to_geojson_feature(s) for s in sites]
-        return jsonify({"type": "FeatureCollection", "features": features})
     finally:
         session.close()
