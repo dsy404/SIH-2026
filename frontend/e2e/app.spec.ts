@@ -24,16 +24,15 @@ test.describe("Home Page", () => {
     
     // Verify main heading
     await expect(
-      page.getByRole("heading", { name: /Disaster Relocation Decision Support System/ })
+      page.getByRole("heading", { name: /Command Center Dashboard/ })
     ).toBeVisible();
 
     // Verify quick links exist
-    await expect(page.getByRole("link", { name: "Geospatial Risk Map" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Data Management Pipeline" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Engine Testing UI" })).toBeVisible();
-    await expect(page.locator("ul").getByRole("link", { name: "ML Evaluation" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Open Risk Map" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "View Action Plan" })).toBeVisible();
   });
 });
+
 
 // ─── Sidebar Navigation ─────────────────────────────────────────────
 
@@ -71,9 +70,10 @@ test.describe("Sidebar Navigation", () => {
     await page.waitForURL("**/ml-evaluation");
     
     await expect(
-      page.getByRole("heading", { name: /ML Evaluation/ })
+      page.getByRole("heading", { name: /Machine Learning Evaluation/ })
     ).toBeVisible();
   });
+
 });
 
 // ─── Engine Testing Page ─────────────────────────────────────────────
