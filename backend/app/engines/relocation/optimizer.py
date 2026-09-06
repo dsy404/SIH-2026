@@ -7,6 +7,9 @@ class RelocationOptimizer:
     """
     Greedy assignment algorithm to map at-risk habitations to optimal candidate sites.
     Respects capacity constraints and safety minimums.
+    
+    NOTE: This engine is stateless. It operates on data passed in as arguments.
+    All data comes from the canonical database via the API route layer.
     """
 
     @staticmethod
@@ -44,7 +47,6 @@ class RelocationOptimizer:
         # Step 3: Compute Initial Capacities for Safe Sites
         site_capacities = {}
         for site in safe_sites:
-            # Assume starting incoming population is 0 just to get baseline feasible capacity
             cap_analysis = CapacityCalculator.analyze_capacity(site["site_id"], 0)
             site_capacities[site["site_id"]] = cap_analysis["feasible_additional_capacity"]
 
@@ -93,21 +95,3 @@ class RelocationOptimizer:
             "assignments": assignments,
             "unassigned": unassigned
         }
-
-    @staticmethod
-    def get_demo_data() -> tuple:
-        """ Returns mock habitations and sites for testing """
-        habitations = [
-            {"id": "H1", "name": "Riverbend Village", "population": 800, "risk_score": 92},
-            {"id": "H2", "name": "Cliffside Settlement", "population": 400, "risk_score": 88},
-            {"id": "H3", "name": "Valley Floor Camp", "population": 1200, "risk_score": 75},
-            {"id": "H4", "name": "Lower Plains", "population": 500, "risk_score": 60},
-        ]
-        
-        # Raw site factors
-        sites = [
-            {"site_id": "S1", "site_name": "Highland Zone A", "factors": {"distance_to_hazard": 90, "terrain_slope": 85, "area_capacity": 95}},
-            {"site_id": "S2", "site_name": "West Plateau", "factors": {"distance_to_hazard": 70, "terrain_slope": 90, "area_capacity": 40}},
-            {"site_id": "S3", "site_name": "Unsafe Lowland", "factors": {"distance_to_hazard": 20, "terrain_slope": 30, "area_capacity": 100}}, # Should be filtered out
-        ]
-        return habitations, sites

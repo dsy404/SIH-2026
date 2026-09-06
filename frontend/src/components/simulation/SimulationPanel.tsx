@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { apiClient } from '@/lib/api';
 
 interface SimulatedHabitation {
   id: string;
@@ -27,14 +28,7 @@ export default function SimulationPanel() {
     const runSimulation = async () => {
       setLoading(true);
       try {
-        const response = await fetch('http://localhost:8000/api/simulation/run', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ rainfall_mm: rainfall })
-        });
-        const data = await response.json();
+        const data = await apiClient.post('/simulation/run', { rainfall_mm: rainfall });
         setResult(data);
       } catch (error) {
         console.error("Simulation failed:", error);

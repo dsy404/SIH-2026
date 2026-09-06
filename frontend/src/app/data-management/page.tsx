@@ -2,8 +2,8 @@ import UploadForm from '@/components/data-management/UploadForm';
 
 export default function DataManagementPage() {
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
+    <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-6">
+      <div className="mb-2">
         <h1 className="text-2xl font-bold text-gray-900">Data Management Pipeline</h1>
         <p className="text-gray-900 mt-1">
           Upload, validate, and standardize geospatial datasets for the engine.

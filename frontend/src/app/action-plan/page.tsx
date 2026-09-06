@@ -59,7 +59,7 @@ export default function ActionPlanPage() {
         }
       `}</style>
       
-      <div className="container mx-auto p-6 max-w-7xl">
+      <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Government Action Plan</h1>

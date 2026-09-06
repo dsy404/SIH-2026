@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-const API_BASE = "http://localhost:5000/api";
+import { apiClient } from '@/lib/api';
 
 type Alert = {
   id: string;
@@ -74,24 +74,21 @@ export default function NotificationsPage() {
 
   const fetchAlerts = async () => {
     try {
-      const res = await fetch(`${API_BASE}/alerts/list`);
-      const data = await res.json();
+      const data = await apiClient.get('/alerts/list');
       setAlerts(data.alerts || []);
     } catch { /* alerts not generated yet */ }
   };
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch(`${API_BASE}/alerts/notifications`);
-      const data = await res.json();
+      const data = await apiClient.get('/alerts/notifications');
       setNotifications(data.notifications || []);
     } catch { /* notifications not generated yet */ }
   };
 
   const fetchRules = async () => {
     try {
-      const res = await fetch(`${API_BASE}/alerts/rules`);
-      const data = await res.json();
+      const data = await apiClient.get('/alerts/rules');
       setRules(data.rules || []);
     } catch { /* backend not available */ }
   };
@@ -118,15 +115,7 @@ export default function NotificationsPage() {
         geom_geojson: JSON.stringify(f.geometry),
       }));
 
-      const res = await fetch(`${API_BASE}/alerts/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ habitations, hazards }),
-      });
-
-      if (!res.ok) throw new Error("Alert generation failed");
-
-      const data = await res.json();
+      const data = await apiClient.post('/alerts/generate', { habitations, hazards });
       setAlerts(data.alerts || []);
       setNotifications(data.notifications || []);
       setSummary(data.summary || null);
@@ -138,17 +127,17 @@ export default function NotificationsPage() {
   };
 
   const markAlertRead = async (alertId: string) => {
-    await fetch(`${API_BASE}/alerts/${alertId}/read`, { method: "PATCH" });
+    await apiClient.patch(`/alerts/${alertId}/read`);
     setAlerts((prev) => prev.map((a) => (a.id === alertId ? { ...a, is_read: true } : a)));
   };
 
   const markNotificationRead = async (notifId: string) => {
-    await fetch(`${API_BASE}/alerts/notifications/${notifId}/read`, { method: "PATCH" });
+    await apiClient.patch(`/alerts/notifications/${notifId}/read`);
     setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, is_read: true } : n)));
   };
 
   const markAllRead = async () => {
-    await fetch(`${API_BASE}/alerts/notifications/read-all`, { method: "PATCH" });
+    await apiClient.patch('/alerts/notifications/read-all');
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
   };
 

@@ -5,7 +5,7 @@ import { SiteComparison, CandidateSite } from '@/components/relocation/SiteCompa
 
 // Hardcoding a habitation ID for the demo
 const DEMO_HABITATION_ID = "hab_001_demo";
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { apiClient } from '@/lib/api';
 
 export default function SafeSitesPage() {
   const [sites, setSites] = useState<CandidateSite[]>([]);
@@ -17,11 +17,7 @@ export default function SafeSitesPage() {
       try {
         setLoading(true);
         // Using the new safe-sites route we just created
-        const res = await fetch(`${API_URL}/safe-sites/compare?habitation_id=${DEMO_HABITATION_ID}`);
-        if (!res.ok) {
-          throw new Error('Failed to fetch candidate sites');
-        }
-        const data = await res.json();
+        const data = await apiClient.get(`/safe-sites/compare?habitation_id=${DEMO_HABITATION_ID}`);
         setSites(data);
         setError(null);
       } catch (err: any) {
@@ -36,7 +32,7 @@ export default function SafeSitesPage() {
   }, []);
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Safe-Site Suitability</h1>

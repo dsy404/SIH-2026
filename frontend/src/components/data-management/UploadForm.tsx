@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
@@ -35,7 +36,7 @@ export default function UploadForm() {
 
     try {
       // In a real app this would point to the deployed backend
-      const res = await fetch("http://localhost:5000/api/datasets/upload", {
+      const res = await fetch(`${API_BASE_URL}/datasets/upload`, {
         method: "POST",
         body: formData,
       });

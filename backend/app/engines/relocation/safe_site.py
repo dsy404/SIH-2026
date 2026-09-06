@@ -67,50 +67,5 @@ class SiteScorer:
         scored_sites.sort(key=lambda x: x["total_score"], reverse=True)
         return scored_sites
 
-    @staticmethod
-    def get_mock_candidates(habitation_id: str) -> List[Dict[str, Any]]:
-        """
-        Generates mock candidate sites for demonstration purposes.
-        """
-        return [
-            {
-                "site_id": f"site_A_{habitation_id}",
-                "site_name": "Highland Safe Zone A",
-                "coordinates": [75.12, 12.34],
-                "factors": {
-                    "distance_to_hazard": 90,
-                    "terrain_slope": 85,
-                    "soil_stability": 80,
-                    "historical_safety": 100,
-                    "road_accessibility": 70,
-                    "healthcare_proximity": 60,
-                    "education_proximity": 50,
-                    "area_capacity": 95,
-                    "water_access": 80,
-                    "power_access": 90,
-                    "distance_to_origin": 40,
-                    "environmental_impact": 75,
-                    "land_use": 85
-                }
-            },
-            {
-                "site_id": f"site_B_{habitation_id}",
-                "site_name": "Valley Edge Resettlement B",
-                "coordinates": [75.15, 12.31],
-                "factors": {
-                    "distance_to_hazard": 60,
-                    "terrain_slope": 70,
-                    "soil_stability": 65,
-                    "historical_safety": 50,
-                    "road_accessibility": 95,
-                    "healthcare_proximity": 90,
-                    "education_proximity": 85,
-                    "area_capacity": 60,
-                    "water_access": 100,
-                    "power_access": 100,
-                    "distance_to_origin": 85,
-                    "environmental_impact": 50,
-                    "land_use": 60
-                }
-            }
-        ]
+
+

@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { NecessityDecision, NecessityData } from '@/components/relocation/NecessityDecision';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-const DEMO_HABITATION_ID = "hab_001_demo";
+import { apiClient } from '@/lib/api';
+const DEMO_HABITATION_ID = "HAB001";
 
 export default function NecessityPage() {
   const [data, setData] = useState<NecessityData | null>(null);
@@ -15,11 +15,7 @@ export default function NecessityPage() {
   const fetchNecessity = async (score: number) => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/necessity/evaluate?habitation_id=${DEMO_HABITATION_ID}&risk_score=${score}`);
-      if (!res.ok) {
-        throw new Error('Failed to fetch necessity decision');
-      }
-      const json = await res.json();
+      const json = await apiClient.get(`/necessity/evaluate?habitation_id=${DEMO_HABITATION_ID}&risk_score=${score}`);
       setData(json);
       setError(null);
     } catch (err: any) {
@@ -46,7 +42,7 @@ export default function NecessityPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Relocation Necessity Classifier</h1>

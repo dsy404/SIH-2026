@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { RelocationPlan, RelocationPlanData } from '@/components/relocation/RelocationPlan';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { apiClient } from '@/lib/api';
 
 export default function OptimizerPage() {
   const [data, setData] = useState<RelocationPlanData | null>(null);
@@ -13,11 +13,7 @@ export default function OptimizerPage() {
   const handleRunOptimizer = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/optimizer/run`);
-      if (!res.ok) {
-        throw new Error('Failed to run optimization algorithm');
-      }
-      const json = await res.json();
+      const json = await apiClient.get('/optimizer/run');
       setData(json);
       setError(null);
     } catch (err: any) {
@@ -29,7 +25,7 @@ export default function OptimizerPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-5xl">
+    <div className="w-full max-w-[1600px] mx-auto flex flex-col gap-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Relocation Optimizer</h1>

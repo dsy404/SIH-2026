@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { apiClient } from '@/lib/api';
 import { MapContainer, TileLayer, GeoJSON, LayersControl, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -25,54 +26,23 @@ export default function MapComponent() {
   useEffect(() => {
     async function loadScoredData() {
       try {
-        const habRes = await fetch('/data/habitations.geojson');
-        const habData = await habRes.json();
+        const habRes = await apiClient.get('/habitations/geojson');
+        setHabitationsFC(habRes);
         
-        const hazRes = await fetch('/data/hazards.geojson');
-        const hazData = await hazRes.json();
-        setHazards(hazData);
+        // Dispatch event for sidebar to show top 5 (which we get from the FC features now)
+        const scoredFeatures = habRes.features.map((f: any) => f.properties);
+        scoredFeatures.sort((a: any, b: any) => (b.rpi || 0) - (a.rpi || 0));
+        window.dispatchEvent(new CustomEvent('map-scored-data', { detail: scoredFeatures }));
         
-        const siteRes = await fetch('/data/candidate_sites.geojson');
-        const siteData = await siteRes.json();
-        setSites(siteData);
-
-        // Prepare flat data for engine
-        const flatHabs = habData.features.map((f: any) => ({
-          ...f.properties,
-          longitude: f.geometry.coordinates[0],
-          latitude: f.geometry.coordinates[1],
-          geom_geojson: JSON.stringify(f.geometry)
-        }));
+        // We still need hazards. Let's try to fetch it if we have an endpoint, else fallback
+        try {
+          const hazRes = await fetch('/data/hazards.geojson');
+          setHazards(await hazRes.json());
+        } catch(e) {}
         
-        const flatHazs = hazData.features.map((f: any) => ({
-          ...f.properties,
-          geom_geojson: JSON.stringify(f.geometry)
-        }));
-
-        // Call Master Engine
-        const apiRes = await fetch('http://localhost:5000/api/engines/master', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ habitations: flatHabs, hazards: flatHazs })
-        });
+        const siteRes = await apiClient.get('/sites/geojson');
+        setSites(siteRes);
         
-        if (apiRes.ok) {
-          const apiData = await apiRes.json();
-          // Merge scores back into GeoJSON FeatureCollection properties
-          const scoredFeatures = habData.features.map((f: any) => {
-            const scored = apiData.results.find((r: any) => r.id === f.properties.id);
-            return {
-              ...f,
-              properties: { ...f.properties, ...scored }
-            };
-          });
-          setHabitationsFC({ type: "FeatureCollection", features: scoredFeatures });
-          
-          // Emit a custom event for the page to catch and show top 5 in sidebar
-          window.dispatchEvent(new CustomEvent('map-scored-data', { detail: apiData.results }));
-        } else {
-          setHabitationsFC(habData); // fallback to raw
-        }
       } catch (err) {
         console.error(err);
       } finally {

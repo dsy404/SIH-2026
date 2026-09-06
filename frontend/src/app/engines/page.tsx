@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { fastapiClient } from '@/lib/api';
 
 export default function EnginesTestingPage() {
   const [result, setResult] = useState<any>(null);
@@ -12,35 +13,7 @@ export default function EnginesTestingPage() {
     setError("");
     setResult(null);
     try {
-      // Fetch the synthetic data to use as payloads
-      const habRes = await fetch('/data/habitations.geojson');
-      const habData = await habRes.json();
-      
-      const hazRes = await fetch('/data/hazards.geojson');
-      const hazData = await hazRes.json();
-      
-      // We parse GeoJSON into the flat format our API expects
-      const habitations = habData.features.map((f: any) => ({
-        ...f.properties,
-        longitude: f.geometry.coordinates[0],
-        latitude: f.geometry.coordinates[1],
-        geom_geojson: JSON.stringify(f.geometry)
-      }));
-      
-      const hazards = hazData.features.map((f: any) => ({
-        ...f.properties,
-        geom_geojson: JSON.stringify(f.geometry)
-      }));
-
-      // Call the hazard engine API
-      const res = await fetch('http://localhost:5000/api/engines/hazard', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ habitations, hazards })
-      });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Engine failed');
+      const data = await fastapiClient.post('/engines/hazard', {});
       
       setResult(data);
     } catch (err: any) {
@@ -55,24 +28,7 @@ export default function EnginesTestingPage() {
     setError("");
     setResult(null);
     try {
-      const habRes = await fetch('/data/habitations.geojson');
-      const habData = await habRes.json();
-      
-      const habitations = habData.features.map((f: any) => ({
-        ...f.properties,
-        longitude: f.geometry.coordinates[0],
-        latitude: f.geometry.coordinates[1],
-        geom_geojson: JSON.stringify(f.geometry)
-      }));
-      
-      const res = await fetch('http://localhost:5000/api/engines/exposure', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ habitations })
-      });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Engine failed');
+      const data = await fastapiClient.post('/engines/exposure', {});
       
       setResult(data);
     } catch (err: any) {
@@ -86,24 +42,7 @@ export default function EnginesTestingPage() {
     setError("");
     setResult(null);
     try {
-      const habRes = await fetch('/data/habitations.geojson');
-      const habData = await habRes.json();
-      
-      const habitations = habData.features.map((f: any) => ({
-        ...f.properties,
-        longitude: f.geometry.coordinates[0],
-        latitude: f.geometry.coordinates[1],
-        geom_geojson: JSON.stringify(f.geometry)
-      }));
-      
-      const res = await fetch('http://localhost:5000/api/engines/vulnerability', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ habitations })
-      });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Engine failed');
+      const data = await fastapiClient.post('/engines/vulnerability', {});
       
       setResult(data);
     } catch (err: any) {
@@ -117,32 +56,7 @@ export default function EnginesTestingPage() {
     setError("");
     setResult(null);
     try {
-      const habRes = await fetch('/data/habitations.geojson');
-      const habData = await habRes.json();
-      
-      const hazRes = await fetch('/data/hazards.geojson');
-      const hazData = await hazRes.json();
-      
-      const habitations = habData.features.map((f: any) => ({
-        ...f.properties,
-        longitude: f.geometry.coordinates[0],
-        latitude: f.geometry.coordinates[1],
-        geom_geojson: JSON.stringify(f.geometry)
-      }));
-      
-      const hazards = hazData.features.map((f: any) => ({
-        ...f.properties,
-        geom_geojson: JSON.stringify(f.geometry)
-      }));
-      
-      const res = await fetch('http://localhost:5000/api/engines/master', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ habitations, hazards })
-      });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Engine failed');
+      const data = await fastapiClient.post('/engines/master', {});
       
       setResult(data);
     } catch (err: any) {

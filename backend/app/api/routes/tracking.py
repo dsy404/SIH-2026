@@ -1,26 +1,52 @@
+"""
+Tracking API — reads assignments and post-relocation data from DB.
+"""
 from flask import Blueprint, jsonify, request
-from app.engines.tracking.post_relocation import PostRelocationTracker
+from app.db.database import get_session_factory
+from app.db.repository import Repository
 
 tracking_bp = Blueprint('tracking', __name__)
 
-@tracking_bp.route('/post-relocation', methods=['POST'])
+
+@tracking_bp.route('/post-relocation', methods=['POST', 'GET'])
 def get_post_relocation_status():
     """
-    POST endpoint to get post-relocation tracking data.
-    Body can optionally contain a list of relocated habitations.
-    If none provided, it generates a demo synthetic set.
+    Returns post-relocation tracking data from the canonical database.
     """
-    data = request.get_json() or {}
-    habitations = data.get("habitations")
-    
-    if not habitations:
-        # Mock some relocated habitations for demo
-        habitations = [
-            {"id": "hab-1", "name": "Riverbank Alpha", "households": 120, "assigned_site_id": "site-1", "assigned_site_name": "Highland Haven"},
-            {"id": "hab-2", "name": "Valley Beta", "households": 45, "assigned_site_id": "site-2", "assigned_site_name": "Plateau Heights"},
-            {"id": "hab-3", "name": "Cliffside Gamma", "households": 80, "assigned_site_id": "site-3", "assigned_site_name": "Temporary Shelter C"},
-            {"id": "hab-4", "name": "Delta Delta", "households": 210, "assigned_site_id": "site-4", "assigned_site_name": "Inland Colony"},
-        ]
-        
-    result = PostRelocationTracker.track_households(habitations)
-    return jsonify(result), 200
+    Session = get_session_factory()
+    session = Session()
+    try:
+        records = Repository.get_post_relocation_records(session)
+
+        if not records:
+            return jsonify({"summary": {"stable": 0, "needs_attention": 0, "at_risk": 0}, "tracking_details": []})
+
+        import json
+        summary = {"stable": 0, "needs_attention": 0, "at_risk": 0}
+        details = []
+
+        for rec in records:
+            hab = Repository.get_habitation(session, rec.habitation_id)
+            site = Repository.get_site(session, rec.site_id)
+
+            missing = json.loads(rec.missing_infrastructure) if rec.missing_infrastructure else []
+
+            if rec.status == "Stable":
+                summary["stable"] += rec.households_relocated
+            elif rec.status == "Needs Attention":
+                summary["needs_attention"] += rec.households_relocated
+            else:
+                summary["at_risk"] += rec.households_relocated
+
+            details.append({
+                "habitation_id": rec.habitation_id,
+                "habitation_name": hab.name if hab else "Unknown",
+                "households": rec.households_relocated,
+                "assigned_site": site.name if site else "Unknown",
+                "status": rec.status,
+                "missing_infrastructure": missing,
+            })
+
+        return jsonify({"summary": summary, "tracking_details": details})
+    finally:
+        session.close()

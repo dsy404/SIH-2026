@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function Sidebar() {
   const routes = [
-    { name: 'Dashboard', path: '/action-plan' },
+    { name: 'Dashboard', path: '/dashboard' },
     { name: 'Risk Map', path: '/risk-map' },
     { name: 'Data Management', path: '/data-management' },
     { name: 'Safe Sites', path: '/safe-sites' },

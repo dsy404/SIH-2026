@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+import { API_BASE_URL } from '@/lib/api';
 
 export default function ExportButton() {
   const [loading, setLoading] = useState(false);
@@ -10,7 +10,7 @@ export default function ExportButton() {
   const handleExportCSV = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/reports/csv`);
+      const res = await fetch(`${API_BASE_URL}/reports/csv`);
       if (!res.ok) throw new Error("Failed to download CSV");
       
       const blob = await res.blob();

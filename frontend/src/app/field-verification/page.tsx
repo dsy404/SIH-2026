@@ -4,54 +4,24 @@ import React, { useState } from 'react';
 import HabitationList, { FieldHabitation } from '@/components/field-verification/HabitationList';
 import VerificationForm from '@/components/field-verification/VerificationForm';
 
-// Mock data for the field verification app
-const MOCK_HABITATIONS: FieldHabitation[] = [
-  {
-    id: "hab-001",
-    name: "Riverbank Settlement Alpha",
-    rpi: 88.5,
-    status: "pending",
-    assignedDate: "2026-09-03",
-    distance: "1.2 km away",
-    systemData: {
-      elevation: 75,
-      slope: 12,
-      population: 450,
-      households: 85
-    }
-  },
-  {
-    id: "hab-002",
-    name: "Hillside Cluster Beta",
-    rpi: 76.2,
-    status: "pending",
-    assignedDate: "2026-09-03",
-    distance: "3.5 km away",
-    systemData: {
-      elevation: 210,
-      slope: 35,
-      population: 120,
-      households: 25
-    }
-  },
-  {
-    id: "hab-005",
-    name: "Valley Floor Gamma",
-    rpi: 42.1,
-    status: "verified",
-    assignedDate: "2026-09-02",
-    distance: "8.0 km away",
-    systemData: {
-      elevation: 110,
-      slope: 5,
-      population: 800,
-      households: 140
-    }
-  }
-];
-
+// Data is fetched dynamically from the API
 export default function FieldVerificationPage() {
-  const [habitations, setHabitations] = useState<FieldHabitation[]>(MOCK_HABITATIONS);
+  const [habitations, setHabitations] = useState<FieldHabitation[]>([]);
+  
+  React.useEffect(() => {
+    async function loadTasks() {
+      try {
+        const res = await fetch('http://localhost:8000/api/habitations/field-verification');
+        if (res.ok) {
+          const data = await res.json();
+          setHabitations(data);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    loadTasks();
+  }, []);
   const [selectedHab, setSelectedHab] = useState<FieldHabitation | null>(null);
 
   const handleSelect = (hab: FieldHabitation) => {
@@ -74,9 +44,9 @@ export default function FieldVerificationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex justify-center">
+    <div className="h-full flex justify-center pb-6">
       {/* Mobile Device Mockup Container */}
-      <div className="w-full max-w-md bg-white shadow-2xl relative min-h-screen overflow-hidden flex flex-col">
+      <div className="w-full max-w-md bg-white shadow-2xl relative h-full max-h-[850px] rounded-3xl overflow-hidden flex flex-col border-8 border-gray-900">
         
         {/* Mock Mobile Status Bar */}
         <div className="bg-blue-600 text-white text-xs px-4 py-2 flex justify-between items-center">
