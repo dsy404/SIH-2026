@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { StatsCards, DashboardStats } from '@/components/dashboard/StatsCards';
 import { PriorityTable, PriorityRow } from '@/components/dashboard/PriorityTable';
 
-import { ArrowRight, Download, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
 import ExportButton from '@/components/reports/ExportButton';
 
