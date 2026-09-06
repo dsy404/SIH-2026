@@ -1,306 +1,582 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { apiClient } from "@/lib/api";
 
-import { apiClient } from '@/lib/api';
-
-type Alert = {
+export interface AlertRecord {
   id: string;
-  rule_id: string;
-  rule_name: string;
-  severity: "critical" | "high" | "warning" | "info";
-  category: string;
-  habitation_id: string;
-  habitation_name: string;
-  message: string;
-  rpi: number | null;
-  is_read: boolean;
-  created_at: string;
-};
-
-type Notification = {
-  id: string;
-  alert_id: string;
+  type: string;
+  severity: "CRITICAL" | "HIGH" | "WARNING" | "INFO";
   title: string;
-  message: string;
-  severity: "critical" | "high" | "warning" | "info";
-  category: string;
-  is_read: boolean;
+  description: string;
+  habitation_id: string | null;
+  habitation_name: string | null;
+  site_id: string | null;
+  site_name: string | null;
+  source_event: string;
+  is_acknowledged: boolean;
+  acknowledged_at: string | null;
+  is_resolved: boolean;
+  resolved_at: string | null;
   created_at: string;
-};
+  rpi?: number | null;
+  rule_id?: string;
+  rule_name?: string;
+}
 
-type AlertRule = {
+export interface AlertSummary {
+  total: number;
+  critical: number;
+  high: number;
+  warning: number;
+  info: number;
+  unacknowledged: number;
+  resolved: number;
+}
+
+export interface AlertRule {
   id: string;
   name: string;
   description: string;
   severity: string;
   category: string;
-};
+}
 
-type Summary = {
-  total_alerts: number;
-  critical: number;
-  high: number;
-  warning: number;
-  habitations_evaluated: number;
-  rules_checked: number;
-  generated_at: string;
-};
-
-const SEVERITY_STYLES: Record<string, { bg: string; border: string; badge: string; icon: string }> = {
-  critical: { bg: "bg-red-50", border: "border-red-300", badge: "bg-red-600 text-white", icon: "🔴" },
-  high: { bg: "bg-orange-50", border: "border-orange-300", badge: "bg-orange-500 text-white", icon: "🟠" },
-  warning: { bg: "bg-yellow-50", border: "border-yellow-300", badge: "bg-yellow-500 text-white", icon: "🟡" },
-  info: { bg: "bg-blue-50", border: "border-blue-300", badge: "bg-blue-500 text-white", icon: "🔵" },
+const SEVERITY_CONFIG: Record<string, { bg: string; border: string; text: string; badge: string; icon: string; ring: string }> = {
+  CRITICAL: {
+    bg: "bg-red-50/70",
+    border: "border-red-300",
+    text: "text-red-800",
+    badge: "bg-red-600 text-white shadow-sm shadow-red-200",
+    icon: "🚨",
+    ring: "focus:ring-red-500",
+  },
+  HIGH: {
+    bg: "bg-orange-50/70",
+    border: "border-orange-300",
+    text: "text-orange-800",
+    badge: "bg-orange-500 text-white shadow-sm shadow-orange-200",
+    icon: "⚠️",
+    ring: "focus:ring-orange-500",
+  },
+  WARNING: {
+    bg: "bg-amber-50/70",
+    border: "border-amber-300",
+    text: "text-amber-800",
+    badge: "bg-amber-500 text-white shadow-sm shadow-amber-200",
+    icon: "⚡",
+    ring: "focus:ring-amber-500",
+  },
+  INFO: {
+    bg: "bg-blue-50/70",
+    border: "border-blue-300",
+    text: "text-blue-800",
+    badge: "bg-blue-600 text-white shadow-sm shadow-blue-200",
+    icon: "ℹ️",
+    ring: "focus:ring-blue-500",
+  },
 };
 
 export default function NotificationsPage() {
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [alerts, setAlerts] = useState<AlertRecord[]>([]);
   const [rules, setRules] = useState<AlertRule[]>([]);
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [generating, setGenerating] = useState(false);
+  const [summary, setSummary] = useState<AlertSummary | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"alerts" | "notifications" | "rules">("alerts");
-  const [filterSeverity, setFilterSeverity] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState<"alerts" | "rules">("alerts");
 
-  // Fetch existing data on mount
-  useEffect(() => {
-    fetchAlerts();
-    fetchNotifications();
-    fetchRules();
-  }, []);
+  // Filters
+  const [filterSeverity, setFilterSeverity] = useState<string>("ALL");
+  const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "RESOLVED">("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [actionInProgress, setActionInProgress] = useState<string | null>(null);
 
-  const fetchAlerts = async () => {
+  const fetchAlerts = useCallback(async () => {
     try {
-      const data = await apiClient.get('/alerts/list');
+      setLoading(true);
+      setError("");
+      const params = new URLSearchParams();
+      if (filterSeverity !== "ALL") params.append("severity", filterSeverity);
+      if (filterStatus !== "ALL") params.append("status", filterStatus);
+
+      const queryStr = params.toString() ? `?${params.toString()}` : "";
+      const data = await apiClient.get(`/alerts${queryStr}`);
       setAlerts(data.alerts || []);
-    } catch { /* alerts not generated yet */ }
-  };
-
-  const fetchNotifications = async () => {
-    try {
-      const data = await apiClient.get('/alerts/notifications');
-      setNotifications(data.notifications || []);
-    } catch { /* notifications not generated yet */ }
-  };
+      setSummary(data.summary || null);
+    } catch (err: any) {
+      console.error("Failed to load alerts:", err);
+      setError("Unable to connect to alert engine database. Ensure backend is running.");
+    } finally {
+      setLoading(false);
+    }
+  }, [filterSeverity, filterStatus]);
 
   const fetchRules = async () => {
     try {
-      const data = await apiClient.get('/alerts/rules');
+      const data = await apiClient.get("/alerts/rules");
       setRules(data.rules || []);
-    } catch { /* backend not available */ }
-  };
-
-  const generateAlerts = async () => {
-    setGenerating(true);
-    setError("");
-    try {
-      // Load habitation and hazard data
-      const habRes = await fetch("/data/habitations.geojson");
-      const habData = await habRes.json();
-      const hazRes = await fetch("/data/hazards.geojson");
-      const hazData = await hazRes.json();
-
-      const habitations = habData.features.map((f: any) => ({
-        ...f.properties,
-        longitude: f.geometry.coordinates[0],
-        latitude: f.geometry.coordinates[1],
-        geom_geojson: JSON.stringify(f.geometry),
-      }));
-
-      const hazards = hazData.features.map((f: any) => ({
-        ...f.properties,
-        geom_geojson: JSON.stringify(f.geometry),
-      }));
-
-      const data = await apiClient.post('/alerts/generate', { habitations, hazards });
-      setAlerts(data.alerts || []);
-      setNotifications(data.notifications || []);
-      setSummary(data.summary || null);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setGenerating(false);
+    } catch (err) {
+      console.error("Failed to fetch alert rules:", err);
     }
   };
 
-  const markAlertRead = async (alertId: string) => {
-    await apiClient.patch(`/alerts/${alertId}/read`);
-    setAlerts((prev) => prev.map((a) => (a.id === alertId ? { ...a, is_read: true } : a)));
+  useEffect(() => {
+    fetchAlerts();
+    fetchRules();
+  }, [fetchAlerts]);
+
+  const handleAcknowledge = async (alertId: string) => {
+    try {
+      setActionInProgress(alertId);
+      const res = await apiClient.patch(`/alerts/${alertId}/acknowledge`);
+      if (res?.alert) {
+        setAlerts((prev) =>
+          prev.map((a) => (a.id === alertId ? { ...a, ...res.alert } : a))
+        );
+        // Refresh summary
+        if (summary) {
+          setSummary({
+            ...summary,
+            unacknowledged: Math.max(0, summary.unacknowledged - 1),
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Acknowledge failed:", err);
+    } finally {
+      setActionInProgress(null);
+    }
   };
 
-  const markNotificationRead = async (notifId: string) => {
-    await apiClient.patch(`/alerts/notifications/${notifId}/read`);
-    setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, is_read: true } : n)));
+  const handleResolve = async (alertId: string) => {
+    try {
+      setActionInProgress(alertId);
+      const res = await apiClient.patch(`/alerts/${alertId}/resolve`);
+      if (res?.alert) {
+        setAlerts((prev) =>
+          prev.map((a) => (a.id === alertId ? { ...a, ...res.alert } : a))
+        );
+        if (summary) {
+          setSummary({
+            ...summary,
+            resolved: summary.resolved + 1,
+            unacknowledged: Math.max(0, summary.unacknowledged - 1),
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Resolve failed:", err);
+    } finally {
+      setActionInProgress(null);
+    }
   };
 
-  const markAllRead = async () => {
-    await apiClient.patch('/alerts/notifications/read-all');
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+  const handleAcknowledgeAll = async () => {
+    try {
+      setLoading(true);
+      await apiClient.patch("/alerts/acknowledge-all");
+      await fetchAlerts();
+    } catch (err) {
+      console.error("Bulk acknowledge failed:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredAlerts = filterSeverity === "all" ? alerts : alerts.filter((a) => a.severity === filterSeverity);
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  // Filter alerts by search query
+  const displayedAlerts = alerts.filter((alert) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      alert.title.toLowerCase().includes(query) ||
+      alert.description.toLowerCase().includes(query) ||
+      alert.type.toLowerCase().includes(query) ||
+      (alert.habitation_name && alert.habitation_name.toLowerCase().includes(query)) ||
+      (alert.habitation_id && alert.habitation_id.toLowerCase().includes(query)) ||
+      (alert.site_name && alert.site_name.toLowerCase().includes(query)) ||
+      (alert.site_id && alert.site_id.toLowerCase().includes(query)) ||
+      alert.source_event.toLowerCase().includes(query)
+    );
+  });
+
+  const formatTimestamp = (ts?: string | null) => {
+    if (!ts) return "—";
+    try {
+      const d = new Date(ts);
+      return d.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return ts;
+    }
+  };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Page Header */}
-      <div className="flex justify-between items-start">
+    <div className="w-full max-w-[1600px] mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Alerts & Notification Center</h1>
-          <p className="text-gray-600 mt-1">
-            Rule-based alert engine monitoring habitation risk thresholds. Generate, view, and manage system alerts.
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+              Alert Engine & Incident Command
+            </h1>
+            <span className="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-1 rounded-full font-bold flex items-center gap-1.5 border border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Event Monitor
+            </span>
+          </div>
+          <p className="text-sm text-gray-600 mt-1">
+            Persisted alert feed autonomously triggered by system events, field verification ground-truth reports, optimizer deficits, and environmental simulations.
           </p>
         </div>
-        <button
-          onClick={generateAlerts}
-          disabled={generating}
-          className="bg-red-600 text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-red-700 disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
-        >
-          {generating ? (
-            <>
-              <span className="animate-spin">⚙</span> Running Engine...
-            </>
-          ) : (
-            <>🔔 Run Alert Engine</>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          {summary && summary.unacknowledged > 0 && (
+            <button
+              onClick={handleAcknowledgeAll}
+              disabled={loading}
+              className="px-4 py-2 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition border border-gray-300 disabled:opacity-50 whitespace-nowrap"
+            >
+              ✓ Acknowledge All ({summary.unacknowledged})
+            </button>
           )}
-        </button>
+          <button
+            onClick={fetchAlerts}
+            disabled={loading}
+            className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition flex items-center gap-2 disabled:opacity-50 whitespace-nowrap"
+          >
+            {loading ? (
+              <span className="animate-spin">🔄</span>
+            ) : (
+              <span>↻</span>
+            )}
+            Refresh Feed
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
-          <strong>Error:</strong> {error}. Make sure the backend is running on <code>localhost:5000</code>.
+        <div className="bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+          <span>⚠️</span>
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Summary Cards */}
+      {/* KPI Overview Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-5 gap-4">
-          <div className="bg-white border rounded-lg p-4 shadow-sm">
-            <div className="text-xs font-bold text-gray-500 uppercase">Total Alerts</div>
-            <div className="text-3xl font-black text-gray-900 mt-1">{summary.total_alerts}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+            <div className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Total Alerts</div>
+            <div className="text-2xl font-black text-gray-900 mt-1">{summary.total}</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">Persisted in SQLite</div>
           </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 shadow-sm">
-            <div className="text-xs font-bold text-red-600 uppercase">Critical</div>
-            <div className="text-3xl font-black text-red-700 mt-1">{summary.critical}</div>
+
+          <div className="bg-red-50/80 border border-red-200 rounded-xl p-4 shadow-sm">
+            <div className="text-[11px] font-bold text-red-700 uppercase tracking-wider flex items-center justify-between">
+              <span>Critical</span>
+              <span>🚨</span>
+            </div>
+            <div className="text-2xl font-black text-red-700 mt-1">{summary.critical}</div>
+            <div className="text-[10px] text-red-500 mt-0.5">Immediate intervention</div>
           </div>
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 shadow-sm">
-            <div className="text-xs font-bold text-orange-600 uppercase">High</div>
-            <div className="text-3xl font-black text-orange-700 mt-1">{summary.high}</div>
+
+          <div className="bg-orange-50/80 border border-orange-200 rounded-xl p-4 shadow-sm">
+            <div className="text-[11px] font-bold text-orange-700 uppercase tracking-wider flex items-center justify-between">
+              <span>High</span>
+              <span>⚠️</span>
+            </div>
+            <div className="text-2xl font-black text-orange-700 mt-1">{summary.high}</div>
+            <div className="text-[10px] text-orange-500 mt-0.5">Blocked roads / Deficits</div>
           </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-sm">
-            <div className="text-xs font-bold text-yellow-600 uppercase">Warning</div>
-            <div className="text-3xl font-black text-yellow-700 mt-1">{summary.warning}</div>
+
+          <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-4 shadow-sm">
+            <div className="text-[11px] font-bold text-amber-700 uppercase tracking-wider flex items-center justify-between">
+              <span>Warning</span>
+              <span>⚡</span>
+            </div>
+            <div className="text-2xl font-black text-amber-700 mt-1">{summary.warning}</div>
+            <div className="text-[10px] text-amber-600 mt-0.5">Capacity & Conflicts</div>
           </div>
-          <div className="bg-white border rounded-lg p-4 shadow-sm">
-            <div className="text-xs font-bold text-gray-500 uppercase">Villages Scanned</div>
-            <div className="text-3xl font-black text-gray-900 mt-1">{summary.habitations_evaluated}</div>
+
+          <div className="bg-purple-50/80 border border-purple-200 rounded-xl p-4 shadow-sm">
+            <div className="text-[11px] font-bold text-purple-700 uppercase tracking-wider flex items-center justify-between">
+              <span>Active Pending</span>
+              <span>🔔</span>
+            </div>
+            <div className="text-2xl font-black text-purple-800 mt-1">{summary.unacknowledged}</div>
+            <div className="text-[10px] text-purple-500 mt-0.5">Unacknowledged</div>
+          </div>
+
+          <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-4 shadow-sm">
+            <div className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider flex items-center justify-between">
+              <span>Resolved</span>
+              <span>✓</span>
+            </div>
+            <div className="text-2xl font-black text-emerald-700 mt-1">{summary.resolved}</div>
+            <div className="text-[10px] text-emerald-600 mt-0.5">Closed incidents</div>
           </div>
         </div>
       )}
 
-      {/* Tab Navigation */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-        {[
-          { key: "alerts" as const, label: "Alerts", count: alerts.length },
-          { key: "notifications" as const, label: "Notifications", count: unreadCount > 0 ? unreadCount : notifications.length },
-          { key: "rules" as const, label: "Engine Rules", count: rules.length },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors flex items-center gap-2 ${
-              activeTab === tab.key
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-600 hover:text-gray-900"
-            }`}
-          >
-            {tab.label}
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-              activeTab === tab.key
-                ? tab.key === "notifications" && unreadCount > 0
-                  ? "bg-red-600 text-white"
-                  : "bg-gray-200 text-gray-700"
-                : "bg-gray-200 text-gray-500"
-            }`}>
-              {tab.key === "notifications" && unreadCount > 0 ? `${unreadCount} new` : tab.count}
-            </span>
-          </button>
-        ))}
+      {/* Navigation Tabs */}
+      <div className="flex gap-2 border-b border-gray-200 pb-2">
+        <button
+          onClick={() => setActiveTab("alerts")}
+          className={`px-5 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
+            activeTab === "alerts"
+              ? "bg-gray-900 text-white shadow-sm"
+              : "bg-white text-gray-600 hover:text-gray-900 border border-gray-200"
+          }`}
+        >
+          <span>Active Incident Ledger</span>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${
+            activeTab === "alerts" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-700"
+          }`}>
+            {displayedAlerts.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("rules")}
+          className={`px-5 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ${
+            activeTab === "rules"
+              ? "bg-gray-900 text-white shadow-sm"
+              : "bg-white text-gray-600 hover:text-gray-900 border border-gray-200"
+          }`}
+        >
+          <span>Configured Trigger Rules</span>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${
+            activeTab === "rules" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-700"
+          }`}>
+            {rules.length}
+          </span>
+        </button>
       </div>
 
-      {/* ─── ALERTS TAB ─── */}
+      {/* ─── TAB 1: ALERTS LEDGER ─── */}
       {activeTab === "alerts" && (
-        <div className="bg-white border rounded-lg shadow-sm">
-          <div className="bg-gray-50 border-b px-4 py-3 flex items-center justify-between">
-            <h2 className="font-bold text-gray-800">System Alerts</h2>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Filter:</span>
-              {["all", "critical", "high", "warning"].map((sev) => (
+        <div className="space-y-4">
+          {/* Controls / Filter Deck */}
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-md">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                🔍
+              </span>
+              <input
+                type="text"
+                placeholder="Search by title, village, site, or trigger type..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 text-xs bg-gray-50 hover:bg-gray-100 focus:bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              />
+            </div>
+
+            {/* Severity Filter Pills */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] font-bold text-gray-400 uppercase mr-1">Severity:</span>
+              {["ALL", "CRITICAL", "HIGH", "WARNING", "INFO"].map((sev) => (
                 <button
                   key={sev}
                   onClick={() => setFilterSeverity(sev)}
-                  className={`text-xs px-3 py-1 rounded-full font-bold transition-colors ${
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
                     filterSeverity === sev
-                      ? sev === "critical"
-                        ? "bg-red-600 text-white"
-                        : sev === "high"
-                        ? "bg-orange-500 text-white"
-                        : sev === "warning"
-                        ? "bg-yellow-500 text-white"
-                        : "bg-gray-900 text-white"
-                      : "bg-gray-200 text-gray-600 hover:bg-gray-300"
+                      ? sev === "CRITICAL"
+                        ? "bg-red-600 text-white shadow-sm"
+                        : sev === "HIGH"
+                        ? "bg-orange-500 text-white shadow-sm"
+                        : sev === "WARNING"
+                        ? "bg-amber-500 text-white shadow-sm"
+                        : sev === "INFO"
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "bg-gray-900 text-white shadow-sm"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
-                  {sev.charAt(0).toUpperCase() + sev.slice(1)}
+                  {sev}
+                </button>
+              ))}
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold text-gray-400 uppercase mr-1">Status:</span>
+              {(["ALL", "ACTIVE", "RESOLVED"] as const).map((st) => (
+                <button
+                  key={st}
+                  onClick={() => setFilterStatus(st)}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                    filterStatus === st
+                      ? "bg-gray-900 text-white shadow-sm"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {st === "ACTIVE" ? "Unacknowledged / Active" : st}
                 </button>
               ))}
             </div>
           </div>
-          <div className="divide-y max-h-[600px] overflow-y-auto">
-            {filteredAlerts.length === 0 ? (
-              <div className="p-10 text-center text-gray-500">
-                <div className="text-4xl mb-2">🔕</div>
-                <p className="font-semibold">No alerts generated yet</p>
-                <p className="text-sm mt-1">Click &quot;Run Alert Engine&quot; to scan habitations against risk thresholds.</p>
+
+          {/* Alert Cards Stream */}
+          <div className="space-y-3">
+            {displayedAlerts.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center text-gray-500">
+                <div className="text-4xl mb-3">🛡️</div>
+                <h3 className="text-base font-bold text-gray-800">No matching system alerts</h3>
+                <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto">
+                  No active incidents match current criteria. System event triggers continuously monitor field updates, optimizer capacity, and simulation stress tests.
+                </p>
               </div>
             ) : (
-              filteredAlerts.map((alert) => {
-                const style = SEVERITY_STYLES[alert.severity] || SEVERITY_STYLES.info;
+              displayedAlerts.map((alert) => {
+                const conf = SEVERITY_CONFIG[alert.severity] || SEVERITY_CONFIG.INFO;
                 return (
                   <div
                     key={alert.id}
-                    className={`p-4 flex items-start gap-3 transition-colors ${
-                      alert.is_read ? "opacity-60" : style.bg
-                    }`}
+                    className={`bg-white rounded-2xl border ${
+                      alert.is_resolved
+                        ? "border-gray-200 opacity-60 hover:opacity-100"
+                        : conf.border
+                    } p-5 shadow-sm transition hover:shadow-md relative overflow-hidden flex flex-col md:flex-row gap-4 justify-between items-start`}
                   >
-                    <span className="text-lg mt-0.5">{style.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${style.badge}`}>
-                          {alert.severity}
+                    {/* Left Severity Accent Bar */}
+                    <div
+                      className={`absolute top-0 left-0 bottom-0 w-1.5 ${
+                        alert.is_resolved ? "bg-gray-300" : conf.badge
+                      }`}
+                    />
+
+                    {/* Main Content Area */}
+                    <div className="flex-1 min-w-0 pl-2">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        {/* Severity Badge */}
+                        <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${conf.badge} flex items-center gap-1`}>
+                          <span>{conf.icon}</span>
+                          <span>{alert.severity}</span>
                         </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-gray-200 text-gray-700 uppercase">
-                          {alert.category}
+
+                        {/* Alert Type */}
+                        <span className="text-[10px] font-mono font-bold bg-gray-100 text-gray-800 px-2 py-0.5 rounded-md border border-gray-200">
+                          {alert.type}
                         </span>
-                        <span className="text-xs text-gray-500 ml-auto">{alert.habitation_name}</span>
+
+                        {/* Source Event Badge */}
+                        <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-200 flex items-center gap-1">
+                          <span>⚡</span>
+                          <span>{alert.source_event}</span>
+                        </span>
+
+                        {/* Lifecycle Status Tags */}
+                        {alert.is_resolved ? (
+                          <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md border border-emerald-300 flex items-center gap-1">
+                            <span>✓</span> Resolved ({formatTimestamp(alert.resolved_at)})
+                          </span>
+                        ) : alert.is_acknowledged ? (
+                          <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md border border-blue-300 flex items-center gap-1">
+                            <span>✓</span> Acknowledged ({formatTimestamp(alert.acknowledged_at)})
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md border border-purple-200 flex items-center gap-1 animate-pulse">
+                            <span>●</span> Pending Action
+                          </span>
+                        )}
+
+                        {/* Alert ID & Created Date */}
+                        <span className="text-[11px] text-gray-400 font-mono ml-auto">
+                          {alert.id} • {formatTimestamp(alert.created_at)}
+                        </span>
                       </div>
-                      <p className="text-sm text-gray-900 font-medium">{alert.message}</p>
-                      <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                        <span>Rule: {alert.rule_name}</span>
-                        {alert.rpi !== null && <span>RPI: {alert.rpi.toFixed(1)}</span>}
+
+                      {/* Title & Description */}
+                      <h3 className="text-base font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                        {alert.title}
+                      </h3>
+                      <p className="text-xs text-gray-700 mt-1 leading-relaxed">
+                        {alert.description}
+                      </p>
+
+                      {/* Habitation & Site Reference Metadata Pills */}
+                      <div className="flex flex-wrap items-center gap-3 mt-3 pt-3 border-t border-gray-100">
+                        {alert.habitation_id && (
+                          <Link
+                            href={`/field-verification?hab_id=${alert.habitation_id}`}
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-lg border border-blue-200 transition"
+                          >
+                            <span>📍 Habitation:</span>
+                            <span>{alert.habitation_name || alert.habitation_id}</span>
+                            <span className="text-[10px] text-blue-500 font-mono">({alert.habitation_id})</span>
+                            <span className="text-blue-400 ml-1">↗</span>
+                          </Link>
+                        )}
+
+                        {alert.site_id && (
+                          <Link
+                            href={`/capacity?site_id=${alert.site_id}`}
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-lg border border-emerald-200 transition"
+                          >
+                            <span>🏢 Relocation Site:</span>
+                            <span>{alert.site_name || alert.site_id}</span>
+                            <span className="text-[10px] text-emerald-500 font-mono">({alert.site_id})</span>
+                            <span className="text-emerald-400 ml-1">↗</span>
+                          </Link>
+                        )}
+
+                        {alert.rpi !== undefined && alert.rpi !== null && (
+                          <span className="text-xs text-gray-500 font-mono">
+                            RPI Score: <strong className="text-gray-800">{alert.rpi.toFixed(1)}</strong>
+                          </span>
+                        )}
                       </div>
                     </div>
-                    {!alert.is_read && (
-                      <button
-                        onClick={() => markAlertRead(alert.id)}
-                        className="text-xs text-blue-600 hover:underline whitespace-nowrap mt-1"
-                      >
-                        Mark read
-                      </button>
-                    )}
+
+                    {/* Operational Action Buttons */}
+                    <div className="flex flex-row md:flex-col items-center md:items-end gap-2 shrink-0 self-stretch md:self-auto justify-end pt-2 md:pt-0 border-t md:border-t-0 border-gray-100">
+                      {/* Deep Link to Associated Habitation / Site */}
+                      {alert.habitation_id ? (
+                        <Link
+                          href={`/field-verification?hab_id=${alert.habitation_id}`}
+                          className="px-3.5 py-1.5 text-xs font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-300 transition flex items-center gap-1.5 whitespace-nowrap"
+                        >
+                          <span>Open Habitation</span>
+                          <span className="text-gray-400">→</span>
+                        </Link>
+                      ) : alert.site_id ? (
+                        <Link
+                          href={`/capacity?site_id=${alert.site_id}`}
+                          className="px-3.5 py-1.5 text-xs font-bold text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-300 transition flex items-center gap-1.5 whitespace-nowrap"
+                        >
+                          <span>Open Safe Site</span>
+                          <span className="text-gray-400">→</span>
+                        </Link>
+                      ) : null}
+
+                      {/* Acknowledge Button */}
+                      {!alert.is_acknowledged && !alert.is_resolved && (
+                        <button
+                          onClick={() => handleAcknowledge(alert.id)}
+                          disabled={actionInProgress === alert.id}
+                          className="px-3.5 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {actionInProgress === alert.id ? "Saving..." : "✓ Acknowledge"}
+                        </button>
+                      )}
+
+                      {/* Resolve Button */}
+                      {!alert.is_resolved && (
+                        <button
+                          onClick={() => handleResolve(alert.id)}
+                          disabled={actionInProgress === alert.id}
+                          className="px-3.5 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {actionInProgress === alert.id ? "Saving..." : "✓ Resolve Incident"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })
@@ -309,112 +585,48 @@ export default function NotificationsPage() {
         </div>
       )}
 
-      {/* ─── NOTIFICATIONS TAB ─── */}
-      {activeTab === "notifications" && (
-        <div className="bg-white border rounded-lg shadow-sm">
-          <div className="bg-gray-50 border-b px-4 py-3 flex items-center justify-between">
-            <h2 className="font-bold text-gray-800">
-              Notifications
-              {unreadCount > 0 && (
-                <span className="ml-2 text-xs bg-red-600 text-white px-2 py-0.5 rounded-full font-bold">
-                  {unreadCount} unread
-                </span>
-              )}
-            </h2>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllRead}
-                className="text-xs text-blue-600 hover:underline font-semibold"
-              >
-                Mark all as read
-              </button>
-            )}
-          </div>
-          <div className="divide-y max-h-[600px] overflow-y-auto">
-            {notifications.length === 0 ? (
-              <div className="p-10 text-center text-gray-500">
-                <div className="text-4xl mb-2">📭</div>
-                <p className="font-semibold">No notifications</p>
-                <p className="text-sm mt-1">Notifications will appear here after running the Alert Engine.</p>
-              </div>
-            ) : (
-              notifications.map((notif) => {
-                const style = SEVERITY_STYLES[notif.severity] || SEVERITY_STYLES.info;
-                return (
-                  <div
-                    key={notif.id}
-                    className={`p-4 flex items-start gap-3 cursor-pointer transition-colors hover:bg-gray-50 ${
-                      notif.is_read ? "opacity-50" : ""
-                    }`}
-                    onClick={() => !notif.is_read && markNotificationRead(notif.id)}
-                  >
-                    <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${notif.is_read ? "bg-gray-300" : "bg-blue-600"}`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-gray-900">{notif.title}</span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${style.badge}`}>
-                          {notif.severity}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mt-0.5">{notif.message}</p>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ─── RULES TAB ─── */}
+      {/* ─── TAB 2: RULES SPECIFICATION ─── */}
       {activeTab === "rules" && (
-        <div className="bg-white border rounded-lg shadow-sm">
-          <div className="bg-gray-50 border-b px-4 py-3">
-            <h2 className="font-bold text-gray-800">Configured Alert Rules</h2>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="p-5 border-b border-gray-100">
+            <h2 className="text-base font-bold text-gray-900">Configured Autonomous Event Triggers</h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              These rules are evaluated against every habitation when the Alert Engine runs.
+              These trigger specifications continuously listen to database mutations, ground verifications, capacity thresholds, and environmental stress simulations.
             </p>
           </div>
-          <div className="p-4">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-xs uppercase text-gray-500">
-                  <th className="text-left py-2">Rule ID</th>
-                  <th className="text-left py-2">Name</th>
-                  <th className="text-left py-2">Description</th>
-                  <th className="text-center py-2">Severity</th>
-                  <th className="text-center py-2">Category</th>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-gray-50 text-gray-500 font-bold uppercase border-b border-gray-200 text-[10px]">
+                <tr>
+                  <th className="py-3 px-4">Rule Code</th>
+                  <th className="py-3 px-4">Trigger Name</th>
+                  <th className="py-3 px-4">Event Criterion & Threshold</th>
+                  <th className="py-3 px-4 text-center">Severity</th>
+                  <th className="py-3 px-4 text-center">Domain</th>
                 </tr>
               </thead>
-              <tbody>
-                {rules.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center text-gray-500">
-                      No rules loaded. Make sure the backend is running.
-                    </td>
-                  </tr>
-                ) : (
-                  rules.map((rule) => {
-                    const style = SEVERITY_STYLES[rule.severity] || SEVERITY_STYLES.info;
-                    return (
-                      <tr key={rule.id} className="border-b last:border-b-0 hover:bg-gray-50 transition-colors">
-                        <td className="py-2.5 font-mono text-xs text-gray-500">{rule.id}</td>
-                        <td className="py-2.5 font-semibold text-gray-900">{rule.name}</td>
-                        <td className="py-2.5 text-gray-600 text-xs">{rule.description}</td>
-                        <td className="py-2.5 text-center">
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${style.badge}`}>
-                            {rule.severity}
-                          </span>
-                        </td>
-                        <td className="py-2.5 text-center">
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-gray-200 text-gray-700 uppercase">
-                            {rule.category}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
+              <tbody className="divide-y divide-gray-100 font-medium">
+                {rules.map((rule) => {
+                  const conf = SEVERITY_CONFIG[rule.severity] || SEVERITY_CONFIG.INFO;
+                  return (
+                    <tr key={rule.id} className="hover:bg-gray-50 transition">
+                      <td className="py-3.5 px-4 font-mono text-gray-500">{rule.id}</td>
+                      <td className="py-3.5 px-4 font-bold text-gray-900">{rule.name}</td>
+                      <td className="py-3.5 px-4 text-gray-600">{rule.description}</td>
+                      <td className="py-3.5 px-4 text-center">
+                        <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${conf.badge}`}>
+                          {rule.severity}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="text-[10px] font-bold uppercase bg-gray-100 text-gray-700 px-2 py-0.5 rounded-md">
+                          {rule.category}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

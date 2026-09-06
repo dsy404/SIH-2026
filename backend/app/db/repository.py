@@ -61,6 +61,13 @@ class Repository:
             "aspect": hab.aspect,
             "geom_geojson": hab.geom_geojson,
             "dataset_type": hab.dataset_type,
+            "road_accessible": hab.road_accessible if hab.road_accessible is not None else True,
+            "road_status": hab.road_status or "OPEN",
+            "water_availability": hab.water_availability or "ADEQUATE",
+            "housing_condition": hab.housing_condition or "PUCCA_GOOD",
+            "healthcare_accessible": hab.healthcare_accessible if hab.healthcare_accessible is not None else True,
+            "hazard_observation": hab.hazard_observation or "NONE",
+            "verification_status": hab.verification_status or "NEEDS_VERIFICATION",
         }
 
     @staticmethod
@@ -88,6 +95,10 @@ class Repository:
     @staticmethod
     def get_all_hazards(db: Session) -> List[Hazard]:
         return db.query(Hazard).order_by(Hazard.id).all()
+
+    @staticmethod
+    def count_hazards(db: Session) -> int:
+        return db.query(Hazard).count()
 
     @staticmethod
     def upsert_hazard(db: Session, data: Dict[str, Any]) -> Hazard:
@@ -298,10 +309,16 @@ class Repository:
 
     @staticmethod
     def get_field_verifications(db: Session, habitation_id: str = None) -> List[FieldVerification]:
-        q = db.query(FieldVerification)
+        q = db.query(FieldVerification).order_by(FieldVerification.created_at.desc())
         if habitation_id:
             q = q.filter(FieldVerification.habitation_id == habitation_id)
         return q.all()
+
+    @staticmethod
+    def get_latest_field_verification(db: Session, habitation_id: str) -> Optional[FieldVerification]:
+        return db.query(FieldVerification).filter(
+            FieldVerification.habitation_id == habitation_id
+        ).order_by(FieldVerification.created_at.desc()).first()
 
     @staticmethod
     def save_field_verification(db: Session, data: Dict[str, Any]) -> FieldVerification:
@@ -309,6 +326,30 @@ class Repository:
         db.add(fv)
         db.flush()
         return fv
+
+    @staticmethod
+    def field_verification_to_dict(fv: FieldVerification) -> Dict[str, Any]:
+        return {
+            "id": fv.id,
+            "habitation_id": fv.habitation_id,
+            "habitation_name": fv.habitation.name if fv.habitation else fv.habitation_id,
+            "verifier_name": fv.verifier_name or "Field Officer",
+            "verified_at": fv.verified_at.isoformat() if fv.verified_at else (fv.created_at.isoformat() if fv.created_at else None),
+            "latitude": fv.latitude,
+            "longitude": fv.longitude,
+            "road_accessible": fv.road_accessible if fv.road_accessible is not None else True,
+            "road_status": fv.road_status or "OPEN",
+            "water_availability": fv.water_availability or "ADEQUATE",
+            "housing_condition": fv.housing_condition or "PUCCA_GOOD",
+            "healthcare_accessible": fv.healthcare_accessible if fv.healthcare_accessible is not None else True,
+            "hazard_observation": fv.hazard_observation or "NONE",
+            "verification_status": fv.verification_status or "VERIFIED",
+            "notes": fv.notes or fv.verifier_notes or "",
+            "previous_state": json.loads(fv.previous_state_snapshot) if fv.previous_state_snapshot else None,
+            "updated_state": json.loads(fv.updated_state_snapshot) if fv.updated_state_snapshot else None,
+            "recalculation_diff": json.loads(fv.recalculation_diff) if fv.recalculation_diff else None,
+            "created_at": fv.created_at.isoformat() if fv.created_at else None,
+        }
 
     # ── Post-Relocation ───────────────────────────────────────────────
 
@@ -326,18 +367,124 @@ class Repository:
     # ── Alerts ────────────────────────────────────────────────────────
 
     @staticmethod
-    def get_alerts(db: Session, severity: str = None) -> List[Alert]:
+    def alert_to_dict(alert: Alert) -> Dict[str, Any]:
+        return {
+            "id": alert.id,
+            "type": alert.type or "SYSTEM_EVENT",
+            "severity": (alert.severity or "INFO").upper(),
+            "title": alert.title or alert.rule_name or "System Alert",
+            "description": alert.description or alert.message or "",
+            "habitation_id": alert.habitation_id,
+            "habitation_name": alert.habitation_name,
+            "site_id": alert.site_id,
+            "site_name": alert.site_name,
+            "source_event": alert.source_event or "SYSTEM_EVENT",
+            "is_acknowledged": bool(alert.is_acknowledged),
+            "acknowledged_at": alert.acknowledged_at.isoformat() + "Z" if alert.acknowledged_at else None,
+            "is_resolved": bool(alert.is_resolved),
+            "resolved_at": alert.resolved_at.isoformat() + "Z" if alert.resolved_at else None,
+            "created_at": alert.created_at.isoformat() + "Z" if alert.created_at else None,
+            # Backward compatibility
+            "rule_id": alert.rule_id,
+            "rule_name": alert.rule_name,
+            "category": alert.category or "system",
+            "message": alert.description or alert.message or "",
+            "rpi": alert.rpi,
+            "is_read": bool(alert.is_acknowledged or alert.is_resolved or alert.is_read),
+        }
+
+    @staticmethod
+    def get_alerts(
+        db: Session,
+        severity: Optional[str] = None,
+        status: Optional[str] = None,
+        source: Optional[str] = None,
+        habitation_id: Optional[str] = None,
+        site_id: Optional[str] = None
+    ) -> List[Alert]:
         q = db.query(Alert).order_by(Alert.created_at.desc())
-        if severity:
-            q = q.filter(Alert.severity == severity)
+
+        if severity and severity.upper() != "ALL":
+            q = q.filter(Alert.severity.ilike(severity))
+
+        if status:
+            s_up = status.upper()
+            if s_up == "UNACKNOWLEDGED" or s_up == "ACTIVE":
+                q = q.filter(Alert.is_acknowledged == False, Alert.is_resolved == False)
+            elif s_up == "ACKNOWLEDGED":
+                q = q.filter(Alert.is_acknowledged == True)
+            elif s_up == "RESOLVED":
+                q = q.filter(Alert.is_resolved == True)
+
+        if source and source.upper() != "ALL":
+            q = q.filter(Alert.source_event.ilike(f"%{source}%"))
+
+        if habitation_id:
+            q = q.filter(Alert.habitation_id == habitation_id)
+
+        if site_id:
+            q = q.filter(Alert.site_id == site_id)
+
         return q.all()
 
     @staticmethod
+    def get_alert(db: Session, alert_id: str) -> Optional[Alert]:
+        return db.query(Alert).filter(Alert.id == alert_id).first()
+
+    @staticmethod
     def save_alert(db: Session, data: Dict[str, Any]) -> Alert:
+        # Check if identical alert exists
+        existing = db.query(Alert).filter(Alert.id == data.get("id")).first()
+        if existing:
+            for k, v in data.items():
+                setattr(existing, k, v)
+            db.flush()
+            return existing
+
         alert = Alert(**data)
         db.add(alert)
         db.flush()
         return alert
+
+    @staticmethod
+    def acknowledge_alert(db: Session, alert_id: str) -> Optional[Alert]:
+        from datetime import datetime
+        alert = db.query(Alert).filter(Alert.id == alert_id).first()
+        if alert:
+            alert.is_acknowledged = True
+            if not alert.acknowledged_at:
+                alert.acknowledged_at = datetime.utcnow()
+            alert.is_read = True
+            db.flush()
+        return alert
+
+    @staticmethod
+    def resolve_alert(db: Session, alert_id: str) -> Optional[Alert]:
+        from datetime import datetime
+        alert = db.query(Alert).filter(Alert.id == alert_id).first()
+        if alert:
+            alert.is_resolved = True
+            alert.is_acknowledged = True
+            if not alert.resolved_at:
+                alert.resolved_at = datetime.utcnow()
+            if not alert.acknowledged_at:
+                alert.acknowledged_at = alert.resolved_at
+            alert.is_read = True
+            db.flush()
+        return alert
+
+    @staticmethod
+    def acknowledge_all_alerts(db: Session) -> int:
+        from datetime import datetime
+        now = datetime.utcnow()
+        unacked = db.query(Alert).filter(Alert.is_acknowledged == False).all()
+        for a in unacked:
+            a.is_acknowledged = True
+            a.acknowledged_at = now
+            a.is_read = True
+        db.flush()
+        return len(unacked)
+
 
     # ── Audit Log ─────────────────────────────────────────────────────
 
@@ -352,11 +499,27 @@ class Repository:
     # ── Datasets ──────────────────────────────────────────────────────
 
     @staticmethod
+    def get_all_datasets(db: Session) -> List[Dataset]:
+        return db.query(Dataset).order_by(Dataset.created_at.desc()).all()
+
+    @staticmethod
+    def get_dataset(db: Session, dataset_id: int) -> Optional[Dataset]:
+        return db.query(Dataset).filter(Dataset.id == dataset_id).first()
+
+    @staticmethod
     def save_dataset(db: Session, data: Dict[str, Any]) -> Dataset:
         ds = Dataset(**data)
         db.add(ds)
         db.flush()
         return ds
+
+    @staticmethod
+    def save_validation_result(db: Session, data: Dict[str, Any]) -> DataValidationResult:
+        res = DataValidationResult(**data)
+        db.add(res)
+        db.flush()
+        return res
+
 
     # ── Utility ───────────────────────────────────────────────────────
 

@@ -19,8 +19,8 @@ export default function Sidebar() {
 
   return (
     <div className="w-64 bg-gray-900 text-white min-h-screen p-4 flex flex-col">
-      <div className="font-bold text-xl mb-8 pb-4 border-b border-gray-700">
-        Disaster Relocation DSS
+      <div className="font-bold text-xl mb-8 pb-4 border-b border-gray-700 tracking-tight">
+        Relocate AI
       </div>
       <nav className="flex-1 space-y-2">
         {routes.map((route) => (

@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [82.04, 25.08],
+            [82.08, 25.08],
+            [82.08, 25.12],
+            [82.04, 25.12],
+            [82.04, 25.08]
+          ]
+        ]
+      },
+      "properties": {
+        "hazard_type": "Flash Flood Inundation",
+        "hazard_severity": "High",
+        "description": "Monsoon 2026 Northern Catchment Inundation"
+      }
+    }
+  ]
+}

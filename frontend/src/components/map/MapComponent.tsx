@@ -42,7 +42,6 @@ export default function MapComponent() {
         
         const siteRes = await apiClient.get('/sites/geojson');
         setSites(siteRes);
-        
       } catch (err) {
         console.error(err);
       } finally {

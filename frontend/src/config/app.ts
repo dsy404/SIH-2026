@@ -1,6 +1,6 @@
 export const APP_CONFIG = {
-  name: "Disaster Relocation DSS",
-  shortName: "RelocationDSS",
+  name: "Relocate AI",
+  shortName: "RelocateAI",
   demoRegion: "Ramgarh District (DEMONSTRATION)",
   isDemo: true,
 };

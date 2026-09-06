@@ -4,6 +4,7 @@ export interface DashboardStats {
   total_habitations: number;
   total_population: number;
   red_zones: number;
+  affected_population?: number;
   capacity_deficit: number;
 }
 
@@ -12,6 +13,10 @@ interface StatsCardsProps {
 }
 
 export const StatsCards: React.FC<StatsCardsProps> = ({ stats }) => {
+  const displayPopulation = stats.affected_population !== undefined 
+    ? stats.affected_population 
+    : stats.total_population;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       {/* Total Habitations */}
@@ -44,7 +49,10 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats }) => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-500 mb-1">Affected Population</p>
-          <p className="text-3xl font-bold text-gray-900">{stats.total_population.toLocaleString()}</p>
+          <p className="text-3xl font-bold text-gray-900">{displayPopulation.toLocaleString()}</p>
+          {stats.affected_population !== undefined && (
+            <p className="text-[11px] text-gray-400 mt-0.5">Total demo pop: {stats.total_population.toLocaleString()}</p>
+          )}
         </div>
         <div className="p-3 rounded-full bg-purple-50 text-purple-600">
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,6 +60,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats }) => {
           </svg>
         </div>
       </div>
+
 
       {/* Capacity Deficit */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex items-center justify-between">

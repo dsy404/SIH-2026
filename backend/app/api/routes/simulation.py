@@ -5,7 +5,50 @@ from flask import Blueprint, jsonify, request
 from app.db.database import get_session_factory
 from app.db.repository import Repository
 
+from app.engines.simulation.simulation_service import SimulationService
+
 simulation_bp = Blueprint('simulation', __name__)
+
+
+@simulation_bp.route('/run-scenario', methods=['POST'])
+def run_scenario():
+    """
+    Executes a DEMO LIVE-UPDATE SIMULATION comparing baseline rainfall to scenario rainfall.
+    Propagates non-destructively through hazard -> risk -> red-zones -> urgency -> optimizer.
+    """
+    data = request.get_json() or {}
+    baseline = float(data.get("baseline_rainfall_mm", 120.0))
+    scenario = float(data.get("scenario_rainfall_mm", 210.0))
+
+    Session = get_session_factory()
+    session = Session()
+    try:
+        res = SimulationService.run_scenario_simulation(
+            session,
+            baseline_rainfall_mm=baseline,
+            scenario_rainfall_mm=scenario
+        )
+        return jsonify(res), 200
+    finally:
+        session.close()
+
+
+@simulation_bp.route('/reset', methods=['POST'])
+def reset_scenario():
+    """
+    Resets the scenario parameters back to baseline default (120 mm) without altering DB records.
+    """
+    Session = get_session_factory()
+    session = Session()
+    try:
+        res = SimulationService.run_scenario_simulation(
+            session,
+            baseline_rainfall_mm=120.0,
+            scenario_rainfall_mm=120.0
+        )
+        return jsonify(res), 200
+    finally:
+        session.close()
 
 
 @simulation_bp.route('/run', methods=['POST'])

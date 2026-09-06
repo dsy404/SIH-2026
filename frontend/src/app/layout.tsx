@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Disaster Relocation DSS",
+  title: "Relocate AI",
   description: "Intelligent Identification of Hazard-Based Red Zones",
   manifest: "/manifest.json",
 };

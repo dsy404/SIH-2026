@@ -80,6 +80,15 @@ class Habitation(Base):
     slope = Column(Float, nullable=True)
     aspect = Column(Float, nullable=True)
 
+    # Infrastructure & Ground Truth Attributes
+    road_accessible = Column(Boolean, default=True)
+    road_status = Column(String, default="OPEN")         # OPEN, BLOCKED, DAMAGED
+    water_availability = Column(String, default="ADEQUATE") # ABUNDANT, ADEQUATE, SCARCE, CONTAMINATED
+    housing_condition = Column(String, default="PUCCA_GOOD") # PUCCA_GOOD, SEMI_PUCCA, KUTCHA_VULNERABLE, DAMAGED
+    healthcare_accessible = Column(Boolean, default=True)
+    hazard_observation = Column(String, default="NONE")  # NONE, RISING_WATER, ACTIVE_SLOPE_CRACK, DEBRIS_FLOW, FLASH_FLOOD
+    verification_status = Column(String, default="NEEDS_VERIFICATION") # VERIFIED, NEEDS_VERIFICATION, CONFLICTING_DATA, OUTDATED
+
     # Metadata
     dataset_type = Column(String, default="UNKNOWN")  # DEMO / SYNTHETIC DATA, UPLOADED, etc.
     confidence = Column(String, default="UNKNOWN")
@@ -288,15 +297,36 @@ class FieldVerification(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     habitation_id = Column(String, ForeignKey("habitations.id"), nullable=False)
 
-    status = Column(String, default="pending")         # pending, verified, flagged
+    verifier_name = Column(String, default="Field Officer")
+    verified_at = Column(DateTime, default=datetime.utcnow)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+
+    # Ground truth observations
+    road_accessible = Column(Boolean, default=True)
+    road_status = Column(String, default="OPEN")         # OPEN, BLOCKED, DAMAGED
+    water_availability = Column(String, default="ADEQUATE") # ABUNDANT, ADEQUATE, SCARCE, CONTAMINATED
+    housing_condition = Column(String, default="PUCCA_GOOD") # PUCCA_GOOD, SEMI_PUCCA, KUTCHA_VULNERABLE, DAMAGED
+    healthcare_accessible = Column(Boolean, default=True)
+    hazard_observation = Column(String, default="NONE")  # NONE, RISING_WATER, ACTIVE_SLOPE_CRACK, DEBRIS_FLOW, FLASH_FLOOD
+    verification_status = Column(String, default="VERIFIED") # VERIFIED, NEEDS_VERIFICATION, CONFLICTING_DATA, OUTDATED
+
+    status = Column(String, default="VERIFIED")          # Backward compatibility alias
     assigned_date = Column(String, nullable=True)
     verified_date = Column(String, nullable=True)
     verifier_notes = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
+
     verified_population = Column(Integer, nullable=True)
     verified_households = Column(Integer, nullable=True)
     verified_elevation = Column(Float, nullable=True)
     verified_slope = Column(Float, nullable=True)
     ground_truth_data = Column(Text, nullable=True)    # JSON blob
+
+    # Audit & Recalculation Snapshots
+    previous_state_snapshot = Column(Text, nullable=True) # JSON
+    updated_state_snapshot = Column(Text, nullable=True)  # JSON
+    recalculation_diff = Column(Text, nullable=True)      # JSON
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -339,16 +369,24 @@ class Dataset(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, nullable=False)
+    source = Column(String, default="Uploaded File")
+    original_filename = Column(String, nullable=True)
     category = Column(String, nullable=True)           # habitations, hazards, sites
     format = Column(String, nullable=True)             # csv, geojson, demo
+    geometry_type = Column(String, default="Point")
     record_count = Column(Integer, default=0)
     valid_count = Column(Integer, default=0)
     invalid_count = Column(Integer, default=0)
-    confidence = Column(String, default="UNKNOWN")
-    projected_crs = Column(String, nullable=True)
+    missing_values_count = Column(Integer, default=0)
+    validation_status = Column(String, default="READY") # UPLOADED, VALIDATED, CLEANED, STANDARDIZED, READY, FAILED
+    processing_status = Column(String, default="Completed")
+    is_real = Column(Boolean, default=True)
+    confidence = Column(String, default="REAL")
+    projected_crs = Column(String, default="EPSG:4326")
     created_at = Column(DateTime, default=datetime.utcnow)
 
     validation_results = relationship("DataValidationResult", back_populates="dataset")
+
 
 
 class DataValidationResult(Base):
@@ -371,16 +409,37 @@ class Alert(Base):
     __tablename__ = "alerts"
 
     id = Column(String, primary_key=True)             # e.g. "ALR-xxxx"
-    rule_id = Column(String, nullable=True)
-    rule_name = Column(String, nullable=True)
-    severity = Column(String, nullable=False)          # critical, high, warning, info
-    category = Column(String, nullable=True)           # risk, hazard, exposure, vulnerability
+    type = Column(String, nullable=False, default="SYSTEM_EVENT") # e.g. RISK_CRITICAL, ROAD_BLOCKED, etc.
+    severity = Column(String, nullable=False, default="INFO")     # CRITICAL, HIGH, WARNING, INFO
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+
+    # Habitation / Site references
     habitation_id = Column(String, ForeignKey("habitations.id"), nullable=True)
     habitation_name = Column(String, nullable=True)
+    site_id = Column(String, ForeignKey("candidate_sites.id"), nullable=True)
+    site_name = Column(String, nullable=True)
+
+    # Event context
+    source_event = Column(String, default="SYSTEM_EVENT")         # FIELD_VERIFICATION, OPTIMIZER, SIMULATION, etc.
+    
+    # Status & Lifecycle
+    is_acknowledged = Column(Boolean, default=False)
+    acknowledged_at = Column(DateTime, nullable=True)
+    is_resolved = Column(Boolean, default=False)
+    resolved_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Legacy & backward compatibility fields
+    rule_id = Column(String, nullable=True)
+    rule_name = Column(String, nullable=True)
+    category = Column(String, nullable=True)                      # risk, hazard, exposure, vulnerability, capacity
     message = Column(Text, nullable=True)
     rpi = Column(Float, nullable=True)
     is_read = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+
+    habitation = relationship("Habitation", foreign_keys=[habitation_id])
+    site = relationship("CandidateSite", foreign_keys=[site_id])
 
 
 # ────────────────────────────────────────────────────────────────────────

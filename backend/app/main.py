@@ -19,6 +19,7 @@ from .api.routes.reports import reports_bp
 from .api.routes.ml import ml_bp
 from .api.routes.habitations import habitations_bp
 from .api.routes.sites import sites_bp
+from .api.routes.field_verification import field_verification_bp
 
 app = Flask(settings.app_name)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -38,6 +39,7 @@ app.register_blueprint(reports_bp, url_prefix=settings.api_prefix + "/reports")
 app.register_blueprint(ml_bp, url_prefix=settings.api_prefix + "/ml")
 app.register_blueprint(habitations_bp, url_prefix=settings.api_prefix + "/habitations")
 app.register_blueprint(sites_bp, url_prefix=settings.api_prefix + "/sites")
+app.register_blueprint(field_verification_bp, url_prefix=settings.api_prefix + "/field-verification")
 
 @app.route("/api/health", methods=["GET"])
 def health_check():
@@ -58,6 +60,61 @@ def _init_and_seed():
             seed_database(session)
         else:
             print(f"[STARTUP] Database already has {count} habitations. Skipping seed.")
+
+        # Ensure synthetic baseline datasets are registered in the dataset metadata registry
+        if len(Repository.get_all_datasets(session)) == 0:
+            Repository.save_dataset(session, {
+                "name": "Ramgarh_Habitations_Baseline",
+                "source": "State Disaster Management Authority (Synthetic Baseline)",
+                "original_filename": "habitations.geojson",
+                "category": "habitations",
+                "format": "geojson",
+                "geometry_type": "Point",
+                "record_count": count or 20,
+                "valid_count": count or 20,
+                "invalid_count": 0,
+                "missing_values_count": 0,
+                "validation_status": "READY",
+                "processing_status": "Completed",
+                "is_real": False,
+                "confidence": "SYNTHETIC",
+                "projected_crs": "EPSG:4326",
+            })
+            Repository.save_dataset(session, {
+                "name": "Ramgarh_Hazards_Baseline",
+                "source": "Geological Survey & Central Water Commission (Synthetic)",
+                "original_filename": "hazards.geojson",
+                "category": "hazards",
+                "format": "geojson",
+                "geometry_type": "Polygon",
+                "record_count": Repository.count_hazards(session) or 10,
+                "valid_count": Repository.count_hazards(session) or 10,
+                "invalid_count": 0,
+                "missing_values_count": 0,
+                "validation_status": "READY",
+                "processing_status": "Completed",
+                "is_real": False,
+                "confidence": "SYNTHETIC",
+                "projected_crs": "EPSG:4326",
+            })
+            Repository.save_dataset(session, {
+                "name": "Ramgarh_Relocation_Sites_Baseline",
+                "source": "Land Revenue Department (Synthetic)",
+                "original_filename": "candidate_sites.geojson",
+                "category": "candidate_sites",
+                "format": "geojson",
+                "geometry_type": "Point",
+                "record_count": Repository.count_sites(session) or 7,
+                "valid_count": Repository.count_sites(session) or 7,
+                "invalid_count": 0,
+                "missing_values_count": 0,
+                "validation_status": "READY",
+                "processing_status": "Completed",
+                "is_real": False,
+                "confidence": "SYNTHETIC",
+                "projected_crs": "EPSG:4326",
+            })
+            session.commit()
     finally:
         session.close()
 

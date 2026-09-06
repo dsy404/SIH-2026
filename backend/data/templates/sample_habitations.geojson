@@ -1,0 +1,33 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [82.045, 25.095]
+      },
+      "properties": {
+        "village_name": "Kalyanpur (Real Ingestion Test)",
+        "population": 1320,
+        "households": 260,
+        "elevation": 155.0,
+        "slope": 9.2
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [82.015, 25.035]
+      },
+      "properties": {
+        "village_name": "Bhagwantpur (Real Ingestion Test)",
+        "population": 890,
+        "households": 175,
+        "elevation": 118.0,
+        "slope": 16.4
+      }
+    }
+  ]
+}

@@ -25,9 +25,20 @@ from .repository import Repository
 SYNTHETIC_DIR = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'synthetic')
 
 CAPACITY_DIMENSIONS = [
-    "Housing", "Water Supply", "Power Grid", "Healthcare",
-    "Education", "Sanitation", "Transport", "Livelihood",
+    "Housing", "Land", "Water", "Sanitation",
+    "Healthcare", "Education", "Road Access", "Electricity",
 ]
+
+RAW_DIMENSION_BASES = {
+    "Housing": 1600,       # dwellings (~7,200 people @ 4.5/dwelling)
+    "Land": 50,           # hectares (~7,500 people @ 150/ha)
+    "Water": 500,         # kL/day (~7,142 people @ 70 LPCD)
+    "Sanitation": 300,    # units (~7,500 people @ 25/toilet)
+    "Healthcare": 30,     # clinic beds (~7,500 people @ 250/bed)
+    "Education": 1500,    # seats (~7,500 people @ 5 pop/seat)
+    "Road Access": 11000, # trips/day (~7,333 people @ 1.5 trips/person)
+    "Electricity": 2600,  # kW (~7,428 people @ 0.35 kW/person)
+}
 
 
 def _load_geojson(filename: str) -> List[Dict[str, Any]]:
@@ -126,9 +137,9 @@ def seed_sites(db: Session):
     # Deterministic suitability factors for demo sites
     demo_factors = {
         "S001": {
-            "distance_to_hazard": 70, "terrain_slope": 85, "soil_stability": 75,
-            "historical_safety": 80, "road_accessibility": 60, "healthcare_proximity": 55,
-            "education_proximity": 50, "area_capacity": 80, "water_access": 70,
+            "distance_to_hazard": 75, "terrain_slope": 85, "soil_stability": 75,
+            "historical_safety": 80, "road_accessibility": 65, "healthcare_proximity": 60,
+            "education_proximity": 55, "area_capacity": 80, "water_access": 70,
             "power_access": 65, "distance_to_origin": 80, "environmental_impact": 70,
             "land_use": 75,
         },
@@ -136,10 +147,32 @@ def seed_sites(db: Session):
             "distance_to_hazard": 90, "terrain_slope": 90, "soil_stability": 85,
             "historical_safety": 95, "road_accessibility": 85, "healthcare_proximity": 80,
             "education_proximity": 75, "area_capacity": 95, "water_access": 85,
-            "power_access": 90, "distance_to_origin": 40, "environmental_impact": 75,
+            "power_access": 90, "distance_to_origin": 70, "environmental_impact": 75,
             "land_use": 85,
         },
+        "S003": {
+            "distance_to_hazard": 80, "terrain_slope": 80, "soil_stability": 75,
+            "historical_safety": 85, "road_accessibility": 75, "healthcare_proximity": 70,
+            "education_proximity": 65, "area_capacity": 85, "water_access": 80,
+            "power_access": 75, "distance_to_origin": 65, "environmental_impact": 80,
+            "land_use": 75,
+        },
+        "S004": {
+            "distance_to_hazard": 85, "terrain_slope": 75, "soil_stability": 80,
+            "historical_safety": 90, "road_accessibility": 80, "healthcare_proximity": 75,
+            "education_proximity": 70, "area_capacity": 90, "water_access": 80,
+            "power_access": 80, "distance_to_origin": 70, "environmental_impact": 85,
+            "land_use": 80,
+        },
+        "S005": {
+            "distance_to_hazard": 95, "terrain_slope": 85, "soil_stability": 90,
+            "historical_safety": 95, "road_accessibility": 90, "healthcare_proximity": 85,
+            "education_proximity": 80, "area_capacity": 90, "water_access": 90,
+            "power_access": 85, "distance_to_origin": 75, "environmental_impact": 90,
+            "land_use": 90,
+        },
     }
+
 
     for feature in features:
         props = feature.get('properties', {})
@@ -181,14 +214,20 @@ def seed_sites(db: Session):
 
 
 def seed_capacity(db: Session):
-    """Generate deterministic capacity data for each site × each dimension."""
+    """Generate deterministic capacity data for each site × each dimension using real physical units."""
     sites = Repository.get_all_sites(db)
 
     for site in sites:
-        base = sum(ord(c) for c in site.id) % 100
+        base = sum(ord(c) for c in site.id) % 25
         for i, dim in enumerate(CAPACITY_DIMENSIONS):
-            max_cap = 2000 + ((base * (i + 1) * 37) % 8000)
-            current = int(max_cap * (0.3 + ((base * i) % 40) / 100.0))
+            base_val = RAW_DIMENSION_BASES.get(dim, 1000)
+            # Modulate base capacity by ±15% deterministically per site
+            factor = 0.85 + (((base * (i + 3)) % 30) / 100.0)
+            max_cap = int(base_val * factor)
+            # Utilization between 25% and 40%
+            util_rate = 0.25 + (((base * (i + 1)) % 15) / 100.0)
+            current = int(max_cap * util_rate)
+
             Repository.upsert_capacity_dimension(db, {
                 "site_id": site.id,
                 "dimension": dim,
@@ -197,6 +236,7 @@ def seed_capacity(db: Session):
             })
 
     db.flush()
+
 
 
 def compute_risk_assessments(db: Session):
@@ -316,6 +356,84 @@ def seed_field_verifications(db: Session):
     db.flush()
 
 
+def compute_optimizer_assignments(db: Session):
+    """Run RelocationOptimizer on all habitations and sites, storing assignments in DB."""
+    from ..engines.relocation.optimizer import RelocationOptimizer
+
+    Repository.clear_assignments(db)
+    all_habs = Repository.get_all_habitations(db)
+    habs_for_opt = []
+    for h in all_habs:
+        d = {
+            "id": h.id,
+            "name": h.name,
+            "population": h.population,
+            "latitude": h.latitude,
+            "longitude": h.longitude,
+        }
+        if h.risk_assessment:
+            d["risk_score"] = h.risk_assessment.rpi
+        else:
+            d["risk_score"] = 0.0
+        habs_for_opt.append(d)
+
+    sites_for_opt = []
+    for s in Repository.get_all_sites(db):
+        sites_for_opt.append({
+            "id": s.id,
+            "site_id": s.id,
+            "name": s.name,
+            "site_name": s.name,
+            "latitude": s.latitude,
+            "longitude": s.longitude,
+            "factors": {
+                "distance_to_hazard": s.distance_to_hazard or 50,
+                "terrain_slope": s.terrain_slope_score or 50,
+                "soil_stability": s.soil_stability or 50,
+                "historical_safety": s.historical_safety or 50,
+                "road_accessibility": s.road_accessibility or 50,
+                "healthcare_proximity": s.healthcare_proximity or 50,
+                "education_proximity": s.education_proximity or 50,
+                "area_capacity": s.area_capacity or 50,
+                "water_access": s.water_access or 50,
+                "power_access": s.power_access or 50,
+                "distance_to_origin": s.distance_to_origin or 50,
+                "environmental_impact": s.environmental_impact or 50,
+                "land_use": s.land_use or 50,
+            },
+        })
+
+    opt_results = RelocationOptimizer.run_optimization(habs_for_opt, sites_for_opt)
+
+    for assignment in opt_results.get("assignments", []):
+        Repository.save_assignment(db, {
+            "habitation_id": assignment["habitation_id"],
+            "site_id": assignment["assigned_site_id"],
+            "population": assignment["population"],
+            "necessity_category": assignment.get("necessity"),
+            "reason": assignment.get("reason", "Optimized assignment"),
+            "status": "pending",
+        })
+    db.flush()
+
+
+def reset_database(db: Session):
+    """Clean all records to allow clean, idempotent re-seeding."""
+    from .models import (
+        RelocationAssignment, RelocationNecessity, RiskAssessment,
+        SiteCapacityDimension, FieldVerification, PostRelocationRecord,
+        Hazard, CandidateSite, Habitation, Block, District, State, AuditLog
+    )
+    for model in [
+        RelocationAssignment, RelocationNecessity, RiskAssessment,
+        SiteCapacityDimension, FieldVerification, PostRelocationRecord,
+        Hazard, CandidateSite, Habitation, Block, District, State, AuditLog
+    ]:
+        db.query(model).delete()
+    db.commit()
+
+
+
 def seed_database(db: Session):
     """Main seeder: seeds everything in order."""
     print("[SEED] Seeding administrative hierarchy...")
@@ -338,6 +456,11 @@ def seed_database(db: Session):
 
     print("[SEED] Computing relocation necessities...")
     compute_necessities(db)
+    db.commit()
+
+    print("[SEED] Computing relocation assignments (RelocationOptimizer)...")
+    compute_optimizer_assignments(db)
+    db.commit()
 
     print("[SEED] Creating demo post-relocation records...")
     seed_post_relocation(db)
@@ -349,3 +472,5 @@ def seed_database(db: Session):
 
     db.commit()
     print(f"[SEED] Done. Habitations: {Repository.count_habitations(db)}, Sites: {Repository.count_sites(db)}")
+
+

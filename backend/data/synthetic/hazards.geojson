@@ -7,33 +7,61 @@
         "type": "Polygon",
         "coordinates": [
           [
-            [
-              82.0,
-              25.0
-            ],
-            [
-              82.04,
-              25.0
-            ],
-            [
-              82.04,
-              25.04
-            ],
-            [
-              82.0,
-              25.04
-            ],
-            [
-              82.0,
-              25.0
-            ]
+            [81.90, 24.98],
+            [82.025, 24.98],
+            [82.025, 25.025],
+            [81.95, 25.025],
+            [81.90, 25.15],
+            [81.90, 24.98]
           ]
         ]
       },
       "properties": {
-        "id": "HZ001",
-        "type": "Flood",
+        "id": "HAZ001",
+        "type": "Riverine Flood",
         "severity": "High",
+        "dataset_type": "DEMO / SYNTHETIC DATA"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [82.12, 24.96],
+            [82.16, 24.96],
+            [82.16, 25.05],
+            [82.12, 25.05],
+            [82.12, 24.96]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "HAZ002",
+        "type": "Landslide Hazard",
+        "severity": "Moderate",
+        "dataset_type": "DEMO / SYNTHETIC DATA"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [81.90, 24.86],
+            [82.03, 24.86],
+            [82.03, 24.90],
+            [81.90, 24.90],
+            [81.90, 24.86]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "HAZ003",
+        "type": "Embankment Breach Risk",
+        "severity": "Moderate",
         "dataset_type": "DEMO / SYNTHETIC DATA"
       }
     }
