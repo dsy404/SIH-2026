@@ -345,9 +345,9 @@ SIH-2026/
 
 ---
 
-## 👥 Contributors & Hackathon Team
+## 👥 Contributors 
 
-Developed with pride for **Smart India Hackathon (SIH) 2026** by team **Relocate AI**.
+Developed with pride for **Smart India Hackathon (SIH) 2026** by team **LOLGORITHMS**.
 
 <div align="center">
 
