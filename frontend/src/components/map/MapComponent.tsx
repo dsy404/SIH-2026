@@ -66,8 +66,8 @@ export default function MapComponent() {
       
       layer.on('click', async (e) => {
         try {
-          // Fetch explainability payload from backend
-          const res = await fetch(`http://localhost:8000/api/habitations/${p.id}/explain`);
+          const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+          const res = await fetch(`${API_BASE_URL}/habitations/${p.id}/explain`);
           if (res.ok) {
             const data = await res.json();
             const popupHtml = `

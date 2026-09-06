@@ -4,9 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { StatsCards, DashboardStats } from '@/components/dashboard/StatsCards';
 import { PriorityTable, PriorityRow } from '@/components/dashboard/PriorityTable';
 
+import { ArrowRight, Download, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 import ExportButton from '@/components/reports/ExportButton';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const API_URL = API_BASE_URL;
 
 export default function ActionPlanPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
