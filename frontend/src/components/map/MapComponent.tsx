@@ -63,25 +63,49 @@ export default function MapComponent() {
   const onEachHabitation = (feature: any, layer: L.Layer) => {
     const p = feature.properties;
     if (p && p.name) {
-      layer.bindPopup(`
-        <div class="p-2 w-64">
-          <div class="flex justify-between items-start mb-2">
-            <h3 class="font-bold text-lg leading-tight">${p.name}</h3>
-            ${p.risk_category ? `<span class="text-[10px] px-2 py-1 rounded bg-black text-white font-bold whitespace-nowrap ml-2">${p.risk_category}</span>` : ''}
-          </div>
-          
-          <div class="bg-gray-100 p-2 rounded mb-2 text-center border ${p.rpi > 75 ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-300'}">
-            <div class="text-xs uppercase font-bold text-gray-500">Relocation Priority Index</div>
-            <div class="text-3xl font-black">${p.rpi !== undefined ? p.rpi.toFixed(1) : 'N/A'}</div>
-          </div>
-          
-          <div class="grid grid-cols-3 gap-1 text-[10px] text-center font-mono">
-            <div class="bg-white border p-1 rounded">Haz<br/><b>${p.hazard_score ?? 0}</b></div>
-            <div class="bg-white border p-1 rounded">Exp<br/><b>${p.exposure_score ?? 0}</b></div>
-            <div class="bg-white border p-1 rounded">Vul<br/><b>${p.vulnerability_score ?? 0}</b></div>
-          </div>
-        </div>
-      `);
+      layer.bindPopup(`<div class="p-4 w-64 text-center text-gray-500">Loading risk assessment...</div>`);
+      
+      layer.on('click', async (e) => {
+        try {
+          // Fetch explainability payload from backend
+          const res = await fetch(`http://localhost:8000/api/habitations/${p.id}/explain`);
+          if (res.ok) {
+            const data = await res.json();
+            const popupHtml = `
+              <div class="p-2 w-64">
+                <div class="flex justify-between items-start mb-2">
+                  <h3 class="font-bold text-lg leading-tight">${p.name}</h3>
+                  <span class="text-[10px] px-2 py-1 rounded bg-black text-white font-bold whitespace-nowrap ml-2">${data.risk_category}</span>
+                </div>
+                
+                <div class="bg-gray-100 p-2 rounded mb-2 text-center border ${data.overall_risk > 75 ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-300'}">
+                  <div class="text-xs uppercase font-bold text-gray-500">Overall Risk (RPI)</div>
+                  <div class="text-3xl font-black">${data.overall_risk.toFixed(1)}</div>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-1 text-[10px] text-center font-mono mb-2">
+                  <div class="bg-white border p-1 rounded">Haz<br/><b>${data.hazard_score.toFixed(1)}</b></div>
+                  <div class="bg-white border p-1 rounded">Exp<br/><b>${data.exposure_score.toFixed(1)}</b></div>
+                  <div class="bg-white border p-1 rounded">Vul<br/><b>${data.vulnerability_score.toFixed(1)}</b></div>
+                </div>
+                
+                <div class="text-xs text-gray-700 bg-blue-50 p-2 rounded border border-blue-100">
+                  <p class="font-bold mb-1">Risk Drivers:</p>
+                  <ul class="list-disc pl-4 mb-2">${data.primary_risk_drivers.map((d: string) => `<li>${d}</li>`).join('')}</ul>
+                  <p class="font-bold mb-1">Explanation:</p>
+                  <p class="text-[10px]">${data.explanation}</p>
+                  <p class="text-[9px] text-gray-400 mt-2">Data Timestamp: ${data.data_timestamp}</p>
+                </div>
+              </div>
+            `;
+            layer.setPopupContent(popupHtml);
+          } else {
+            layer.setPopupContent(`<div class="p-2 text-red-500">Failed to load risk assessment.</div>`);
+          }
+        } catch (err) {
+          layer.setPopupContent(`<div class="p-2 text-red-500">Error fetching assessment.</div>`);
+        }
+      });
     }
   };
 

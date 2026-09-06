@@ -59,30 +59,46 @@ export default function SimulationPanel() {
 
       {/* Control Panel */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-        <h2 className="text-lg font-bold text-gray-800 mb-4">Environmental Variables</h2>
+        <h2 className="text-lg font-bold text-gray-800 mb-4">Vertical Slice Demonstration (HAB001)</h2>
         
         <div className="space-y-4">
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="text-sm font-medium text-gray-700">Additional Rainfall (mm)</label>
+              <label className="text-sm font-medium text-gray-700">Simulated Hazard Score for HAB001</label>
               <span className="text-sm font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                +{rainfall} mm
+                Score: {rainfall}
               </span>
             </div>
             <input 
               type="range" 
               min="0" 
-              max="500" 
-              step="10"
+              max="100" 
+              step="1"
               value={rainfall}
               onChange={handleSliderChange}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1">
-              <span>Normal (0mm)</span>
-              <span>Extreme Flood Event (500mm)</span>
+              <span>Low (0)</span>
+              <span>Critical (100)</span>
             </div>
           </div>
+          
+          <button 
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const data = await apiClient.post('/simulation/recalculate/HAB001', { hazard_score: rainfall });
+                alert(JSON.stringify(data, null, 2));
+              } catch (e) {
+                alert("Error recalculating");
+              }
+              setLoading(false);
+            }}
+            className="w-full mt-4 bg-black text-white py-2 rounded-lg font-bold uppercase text-sm tracking-wider shadow-sm hover:bg-gray-800"
+          >
+            Trigger Full Pipeline Recalculation for HAB001
+          </button>
         </div>
       </div>
 
@@ -90,7 +106,7 @@ export default function SimulationPanel() {
       {result && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-lg font-bold text-gray-800">Live Risk Cascade</h2>
+            <h2 className="text-lg font-bold text-gray-800">Legacy Live Risk Cascade</h2>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-500">Critical Red Zones:</span>
               <span className={`text-lg font-bold px-3 py-1 rounded-full ${

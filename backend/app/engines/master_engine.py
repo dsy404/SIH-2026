@@ -44,19 +44,20 @@ class MasterEngine:
             hab['rpi'] = min(100.0, rpi)
             
             # Determine Risk Category
-            if hab['rpi'] > 75:
-                hab['risk_category'] = "CRITICAL PRIORITY"
-            elif hab['rpi'] > 50:
-                hab['risk_category'] = "HIGH PRIORITY"
-            elif hab['rpi'] > 25:
-                hab['risk_category'] = "MODERATE PRIORITY"
+            if hab['rpi'] >= 76:
+                hab['risk_category'] = "Critical / Red Zone Candidate"
+            elif hab['rpi'] >= 56:
+                hab['risk_category'] = "High"
+            elif hab['rpi'] >= 31:
+                hab['risk_category'] = "Moderate"
             else:
-                hab['risk_category'] = "LOW PRIORITY"
+                hab['risk_category'] = "Low"
                 
             hab['rpi_explanation'] = {
                 "engine": "MasterEngine",
                 "weights_used": weights,
-                "calculation": f"({h_score} * {weights.get('hazard')}) + ({e_score} * {weights.get('exposure')}) + ({v_score} * {weights.get('vulnerability')})"
+                "calculation": f"({h_score} * {weights.get('hazard')}) + ({e_score} * {weights.get('exposure')}) + ({v_score} * {weights.get('vulnerability')})",
+                "disclaimer": "Prototype classification based on synthetic data. Not official government thresholds."
             }
             
         # Sort by highest RPI first
