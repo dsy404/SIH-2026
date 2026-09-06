@@ -10,6 +10,8 @@
 
 **Next-Generation AI-Powered Geospatial Decision Support System for Disaster-Induced Habitation Relocation & Carrying Capacity Optimization**
 
+🚀 **Live Demo:** [https://sih-2026-black-eight.vercel.app/](https://sih-2026-black-eight.vercel.app/)
+
 [Explore Features](#-core-platform-modules) • [System Architecture](#-system-architecture) • [Quickstart Guide](#-quickstart--installation) • [API Reference](#-api-reference) • [Methodology](#-scientific-methodology)
 
 </div>
